@@ -14,6 +14,7 @@ public class RpcConstants {
     public static final byte TOTAL_LENGTH = 16;
     public static final byte REQUEST_TYPE = 1;
     public static final byte RESPONSE_TYPE = 2;
+    public static final byte ERROR_TYPE = 3;
     //ping
     public static final byte HEARTBEAT_REQUEST_TYPE = 3;
     //pong

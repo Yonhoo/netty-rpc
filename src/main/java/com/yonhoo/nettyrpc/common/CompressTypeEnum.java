@@ -7,6 +7,7 @@ import lombok.Value;
 @AllArgsConstructor
 @Getter
 public enum CompressTypeEnum {
+    NONE((byte) 0x00, "none"),
     GZIP((byte) 0x01, "gzip");
 
     private final byte code;

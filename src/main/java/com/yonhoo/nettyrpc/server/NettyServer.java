@@ -1,7 +1,7 @@
 package com.yonhoo.nettyrpc.server;
 
 import com.google.common.base.Preconditions;
-import com.yonhoo.nettyrpc.config.ProtocolNegotiator;
+import com.yonhoo.nettyrpc.protocol.ProtocolNegotiator;
 import com.yonhoo.nettyrpc.util.RuntimeUtil;
 import com.yonhoo.nettyrpc.util.ThreadPoolFactoryUtil;
 import io.netty.channel.EventLoopGroup;
@@ -9,7 +9,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.tomcat.util.net.openssl.ciphers.Protocol;
 
 import java.net.SocketAddress;
 import java.util.List;

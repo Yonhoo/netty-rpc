@@ -1,4 +1,4 @@
-package com.yonhoo.nettyrpc.dto;
+package com.yonhoo.nettyrpc.protocol;
 
 import lombok.Builder;
 import lombok.Value;
