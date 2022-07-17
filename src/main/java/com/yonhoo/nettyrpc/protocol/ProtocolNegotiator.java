@@ -38,6 +38,7 @@ public class ProtocolNegotiator extends MessageToByteEncoder<RpcMessage> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, RpcMessage rpcMessage, ByteBuf out) {
+        int tailIndex = out.writerIndex();
         try {
             writeHead(rpcMessage, out);
 
@@ -45,8 +46,9 @@ public class ProtocolNegotiator extends MessageToByteEncoder<RpcMessage> {
 
             fillFullLength(out, fullLength);
         } catch (Exception e) {
+            out.writerIndex(tailIndex);
             log.error("ProtocolNegotiator encode error ", e);
-            writeHead(rpcMessage, out);
+            writeErrorHead(out);
             int fullLength = writeBody(e.getMessage(), out);
 
             fillFullLength(out, fullLength);
@@ -70,6 +72,21 @@ public class ProtocolNegotiator extends MessageToByteEncoder<RpcMessage> {
         return fullLength;
     }
 
+    private void writeErrorHead(ByteBuf out) {
+        //leave a place to write the value of full length
+        out.writerIndex(out.writerIndex() + 4);
+
+        out.writeBytes(RpcConstants.MAGIC_NUMBER);
+        out.writeByte(RpcConstants.VERSION);
+
+        out.writeByte(RpcConstants.ERROR_TYPE);
+        out.writeByte(RpcConstants.PROTOCOL_DEFAULT_TYPE);
+        out.writeByte(CompressTypeEnum.NONE.getCode());
+
+        // reuqest id
+        out.writeInt(ATOMIC_INTEGER.incrementAndGet());
+    }
+
     private void writeHead(RpcMessage rpcMessage, ByteBuf out) {
         //leave a place to write the value of full length
         out.writerIndex(out.writerIndex() + 4);
@@ -77,6 +94,9 @@ public class ProtocolNegotiator extends MessageToByteEncoder<RpcMessage> {
         out.writeBytes(RpcConstants.MAGIC_NUMBER);
         out.writeByte(RpcConstants.VERSION);
 
+        if (rpcMessage.getMessageType() == 0) {
+            throw new RuntimeException("message type not be null");
+        }
         out.writeByte(rpcMessage.getMessageType());
         out.writeByte(rpcMessage.getCodec());
         if (CompressTypeEnum.GZIP.getCode() == rpcMessage.getCompress()) {

@@ -54,4 +54,27 @@ class ProtocolNegotiatorUnitTest {
         assertThat(encodeData).isEqualTo(serializeData);
 
     }
+
+    @Test
+    void should_encode_error_type_response_protocol_when_encode_error() {
+        ChannelHandlerContext ctx = Mockito.mock(ChannelHandlerContext.class);
+
+        ByteBuf out = Unpooled.buffer(50);
+        RpcMessage message = RpcMessage.builder().build();
+
+        ProtocolNegotiator protocolNegotiator = new ProtocolNegotiator();
+        protocolNegotiator.encode(ctx, message, out);
+
+        assertThat(out.getInt(0)).isGreaterThan(16);
+        assertThat(out.getByte(4)).isEqualTo(RpcConstants.MAGIC_NUMBER[0]);
+        assertThat(out.getByte(4 + 1)).isEqualTo(RpcConstants.MAGIC_NUMBER[1]);
+        assertThat(out.getByte(4 + 2)).isEqualTo(RpcConstants.MAGIC_NUMBER[2]);
+        assertThat(out.getByte(4 + 3)).isEqualTo(RpcConstants.MAGIC_NUMBER[3]);
+        assertThat(out.getByte(8)).isEqualTo(RpcConstants.VERSION);
+        assertThat(out.getByte(9)).isEqualTo(RpcConstants.ERROR_TYPE);
+        assertThat(out.getByte(10)).isEqualTo(RpcConstants.PROTOCOL_DEFAULT_TYPE);
+        assertThat(out.getByte(11)).isEqualTo(CompressTypeEnum.NONE.getCode());
+        assertThat(out.getInt(12)).isEqualTo(1);
+
+    }
 }
