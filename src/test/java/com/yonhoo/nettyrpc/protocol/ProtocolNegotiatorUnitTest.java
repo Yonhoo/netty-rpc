@@ -8,8 +8,6 @@ import com.yonhoo.nettyrpc.common.RpcConstants;
 import com.yonhoo.nettyrpc.serialize.ProtostuffSerializer;
 import com.yonhoo.nettyrpc.serialize.Serializer;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.EmptyByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.jupiter.api.Test;
@@ -18,6 +16,17 @@ import org.mockito.Mockito;
 class ProtocolNegotiatorUnitTest {
 
     public static final int HEAD_LENGTH = 16;
+    public static final int TOTAL_LENGTH = 0;
+    public static final int MAGIC_NUMBER_0 = 4;
+    public static final int MAGIC_NUMBER_1 = 5;
+    public static final int MAGIC_NUMBER_2 = 6;
+    public static final int MAGIC_NUMBER_3 = 7;
+    public static final int PROTOCOL_VERSION = 8;
+    public static final int RESPONSE_TYPE = 9;
+    public static final int CODEC_TYPE = 10;
+    public static final int COMPRESS_TYPE = 11;
+    public static final int REQUEST_ID = 12;
+    public static final int BODY = 16;
 
     @Test
     void should_encode_response_protocol_given_response_msg() {
@@ -37,20 +46,19 @@ class ProtocolNegotiatorUnitTest {
         int totalLength = HEAD_LENGTH + serializeData.length;
         ProtocolNegotiator protocolNegotiator = new ProtocolNegotiator();
         protocolNegotiator.encode(ctx, message, out);
-        int length = out.getInt(0);
 
-        assertThat(length).isEqualTo(totalLength);
-        assertThat(out.getByte(4)).isEqualTo(RpcConstants.MAGIC_NUMBER[0]);
-        assertThat(out.getByte(4 + 1)).isEqualTo(RpcConstants.MAGIC_NUMBER[1]);
-        assertThat(out.getByte(4 + 2)).isEqualTo(RpcConstants.MAGIC_NUMBER[2]);
-        assertThat(out.getByte(4 + 3)).isEqualTo(RpcConstants.MAGIC_NUMBER[3]);
-        assertThat(out.getByte(8)).isEqualTo(RpcConstants.VERSION);
-        assertThat(out.getByte(9)).isEqualTo(RpcConstants.RESPONSE_TYPE);
-        assertThat(out.getByte(10)).isEqualTo((byte) 0);
-        assertThat(out.getByte(11)).isEqualTo(CompressTypeEnum.NONE.getCode());
-        assertThat(out.getInt(12)).isEqualTo(1);
+        assertThat(out.getInt(TOTAL_LENGTH)).isEqualTo(totalLength);
+        assertThat(out.getByte(MAGIC_NUMBER_0)).isEqualTo(RpcConstants.MAGIC_NUMBER[0]);
+        assertThat(out.getByte(MAGIC_NUMBER_1)).isEqualTo(RpcConstants.MAGIC_NUMBER[1]);
+        assertThat(out.getByte(MAGIC_NUMBER_2)).isEqualTo(RpcConstants.MAGIC_NUMBER[2]);
+        assertThat(out.getByte(MAGIC_NUMBER_3)).isEqualTo(RpcConstants.MAGIC_NUMBER[3]);
+        assertThat(out.getByte(PROTOCOL_VERSION)).isEqualTo(RpcConstants.VERSION);
+        assertThat(out.getByte(RESPONSE_TYPE)).isEqualTo(RpcConstants.RESPONSE_TYPE);
+        assertThat(out.getByte(CODEC_TYPE)).isEqualTo((byte) 0);
+        assertThat(out.getByte(COMPRESS_TYPE)).isEqualTo(CompressTypeEnum.NONE.getCode());
+        assertThat(out.getInt(REQUEST_ID)).isEqualTo(1);
         byte[] encodeData = new byte[serializeData.length];
-        out.getBytes(16, encodeData);
+        out.getBytes(BODY, encodeData);
         assertThat(encodeData).isEqualTo(serializeData);
 
     }
@@ -65,16 +73,16 @@ class ProtocolNegotiatorUnitTest {
         ProtocolNegotiator protocolNegotiator = new ProtocolNegotiator();
         protocolNegotiator.encode(ctx, message, out);
 
-        assertThat(out.getInt(0)).isGreaterThan(16);
-        assertThat(out.getByte(4)).isEqualTo(RpcConstants.MAGIC_NUMBER[0]);
-        assertThat(out.getByte(4 + 1)).isEqualTo(RpcConstants.MAGIC_NUMBER[1]);
-        assertThat(out.getByte(4 + 2)).isEqualTo(RpcConstants.MAGIC_NUMBER[2]);
-        assertThat(out.getByte(4 + 3)).isEqualTo(RpcConstants.MAGIC_NUMBER[3]);
-        assertThat(out.getByte(8)).isEqualTo(RpcConstants.VERSION);
-        assertThat(out.getByte(9)).isEqualTo(RpcConstants.ERROR_TYPE);
-        assertThat(out.getByte(10)).isEqualTo(RpcConstants.PROTOCOL_DEFAULT_TYPE);
-        assertThat(out.getByte(11)).isEqualTo(CompressTypeEnum.NONE.getCode());
-        assertThat(out.getInt(12)).isEqualTo(1);
+        assertThat(out.getInt(TOTAL_LENGTH)).isEqualTo(16);
+        assertThat(out.getByte(MAGIC_NUMBER_0)).isEqualTo(RpcConstants.MAGIC_NUMBER[0]);
+        assertThat(out.getByte(MAGIC_NUMBER_1)).isEqualTo(RpcConstants.MAGIC_NUMBER[1]);
+        assertThat(out.getByte(MAGIC_NUMBER_2)).isEqualTo(RpcConstants.MAGIC_NUMBER[2]);
+        assertThat(out.getByte(MAGIC_NUMBER_3)).isEqualTo(RpcConstants.MAGIC_NUMBER[3]);
+        assertThat(out.getByte(PROTOCOL_VERSION)).isEqualTo(RpcConstants.VERSION);
+        assertThat(out.getByte(RESPONSE_TYPE)).isEqualTo(RpcConstants.ERROR_TYPE);
+        assertThat(out.getByte(CODEC_TYPE)).isEqualTo(RpcConstants.PROTOCOL_DEFAULT_TYPE);
+        assertThat(out.getByte(COMPRESS_TYPE)).isEqualTo(CompressTypeEnum.NONE.getCode());
+        assertThat(out.getInt(REQUEST_ID)).isEqualTo(1);
 
     }
 }
