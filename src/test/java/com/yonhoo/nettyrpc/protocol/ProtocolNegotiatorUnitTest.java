@@ -73,7 +73,7 @@ class ProtocolNegotiatorUnitTest {
         ProtocolNegotiator protocolNegotiator = new ProtocolNegotiator();
         protocolNegotiator.encode(ctx, message, out);
 
-        assertThat(out.getInt(TOTAL_LENGTH)).isEqualTo(16);
+        assertThat(out.getInt(TOTAL_LENGTH)).isEqualTo(46);
         assertThat(out.getByte(MAGIC_NUMBER_0)).isEqualTo(RpcConstants.MAGIC_NUMBER[0]);
         assertThat(out.getByte(MAGIC_NUMBER_1)).isEqualTo(RpcConstants.MAGIC_NUMBER[1]);
         assertThat(out.getByte(MAGIC_NUMBER_2)).isEqualTo(RpcConstants.MAGIC_NUMBER[2]);
