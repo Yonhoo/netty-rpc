@@ -1,28 +1,23 @@
 package com.yonhoo.nettyrpc.server;
 
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
+@Getter
 public final class NettyServerBuilder extends ServerBuilder<NettyServerBuilder> {
 
-    private static final Logger log = LogManager.getLogger(NettyServerBuilder.class.getName());
-
     private final List<SocketAddress> listenAddresses;
-    private final Map<Object,Object> channelOptionals;
-    private final Map<Object,Object> childChannelOptionals;
-    private int maxMessageSize = 4194304;
-    private Long keepAliveTimeInNanos = TimeUnit.HOURS.toNanos(2L);
-    private Long keepAliveTimeoutInNanos = TimeUnit.SECONDS.toNanos(20L);
+    private final Map<String, ServerServiceDefinition> serviceDefinitionMap = new ConcurrentHashMap<>();
+    private final Map<Object, Object> channelOptionals;
+    private final Map<Object, Object> childChannelOptionals;
+    private final ServerConfig serverConfig = new ServerConfig();
 
     @Override
     public NettyServerBuilder forPort(int port) {
@@ -33,25 +28,71 @@ public final class NettyServerBuilder extends ServerBuilder<NettyServerBuilder> 
         return new NettyServerBuilder(address);
     }
 
-    private NettyServerBuilder(SocketAddress address){
+    private NettyServerBuilder(SocketAddress address) {
         this.channelOptionals = new HashMap<>();
         this.childChannelOptionals = new HashMap<>();
         this.listenAddresses = List.of(address);
     }
 
     @Override
-    public NettyServerBuilder executor(Executor executor) {
-        return null;
+    public NettyServerBuilder addService(ServerServiceDefinition service) {
+        serviceDefinitionMap.put(service.getServiceName(), service);
+        return this;
     }
 
+    /**
+     * time unit MILLISECONDS
+     *
+     * @param connectAliveTime keep alive time when build connection
+     * @return NettyServerBuilder
+     */
     @Override
-    public NettyServerBuilder addService(ServerServiceDefinition service) {
-        return null;
+    public NettyServerBuilder keepAliveTime(long connectAliveTime) {
+        serverConfig.setConnAliveTime(connectAliveTime);
+        return this;
+    }
+
+    /**
+     * build biz pool
+     * <p>
+     * time unit MILLISECONDS
+     *
+     * @param corePoolSize    executor core pool size
+     * @param maximumPoolSize executor maximum pool size
+     * @param keepAliveTime   thread alive time
+     * @return NettyServerBuilder
+     */
+    @Override
+    public NettyServerBuilder bizPoolConfig(int corePoolSize, int maximumPoolSize, long keepAliveTime) {
+        serverConfig.setCorePoolSize(corePoolSize);
+        serverConfig.setMaximumPoolSize(maximumPoolSize);
+        serverConfig.setThreadAliveTime(keepAliveTime);
+        return this;
+    }
+
+    /**
+     * build biz pool
+     * <p>
+     * time unit MILLISECONDS
+     *
+     * @param corePoolSize    executor core pool size
+     * @param maximumPoolSize executor maximum pool size
+     * @param keepAliveTime   thread alive time
+     * @param queueSize       queue size
+     * @return NettyServerBuilder
+     */
+    @Override
+    public NettyServerBuilder bizPoolConfig(int corePoolSize, int maximumPoolSize, long keepAliveTime, int queueSize) {
+        serverConfig.setCorePoolSize(corePoolSize);
+        serverConfig.setMaximumPoolSize(maximumPoolSize);
+        serverConfig.setThreadAliveTime(keepAliveTime);
+        serverConfig.setQueueSize(queueSize);
+        return this;
     }
 
     @Override
     public Object build() {
-        return new NettyServer(this.listenAddresses);
+        return new NettyServer(this.listenAddresses, this.serverConfig);
     }
 
 }

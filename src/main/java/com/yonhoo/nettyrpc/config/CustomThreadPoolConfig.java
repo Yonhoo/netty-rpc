@@ -1,5 +1,8 @@
 package com.yonhoo.nettyrpc.config;
 
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,22 +14,30 @@ import java.util.concurrent.TimeUnit;
 @Setter
 public class CustomThreadPoolConfig {
     /**
-     * 线程池默认参数
+     * executor parameters
      */
-    private static final int DEFAULT_CORE_POOL_SIZE = 10;
-    private static final int DEFAULT_MAXIMUM_POOL_SIZE_SIZE = 100;
-    private static final int DEFAULT_KEEP_ALIVE_TIME = 1;
-    private static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.MINUTES;
-    private static final int DEFAULT_BLOCKING_QUEUE_CAPACITY = 100;
-    private static final int BLOCKING_QUEUE_CAPACITY = 100;
-    /**
-     * 可配置参数
-     */
-    private int corePoolSize = DEFAULT_CORE_POOL_SIZE;
-    private int maximumPoolSize = DEFAULT_MAXIMUM_POOL_SIZE_SIZE;
-    private long keepAliveTime = DEFAULT_KEEP_ALIVE_TIME;
-    private TimeUnit unit = DEFAULT_TIME_UNIT;
-    // 使用有界队列
-    private BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(BLOCKING_QUEUE_CAPACITY);
+    public static final int DEFAULT_CORE_POOL_SIZE = 8;
+    public static final int DEFAULT_MAXIMUM_POOL_SIZE_SIZE = 100;
+    public static final int DEFAULT_KEEP_ALIVE_TIME = 60000;
+    public static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.MILLISECONDS;
+    public static final int DEFAULT_BLOCKING_QUEUE_CAPACITY = 100;
+    public static final int BLOCKING_QUEUE_CAPACITY = 100;
 
+    /**
+     * build ThreadPoolExecutor
+     *
+     * @param corePoolSize    executor core pool size
+     * @param maximumPoolSize executor maximum pool size
+     * @param keepAliveTime   thread alive time
+     * @param queueSize       set queue size
+     * @return ThreadPoolExecutor
+     */
+    public static ThreadPoolExecutor initPool(int corePoolSize, int maximumPoolSize,
+                                              long keepAliveTime, Integer queueSize) {
+        BlockingQueue<Runnable> poolQueue = (queueSize != null && queueSize > 0)
+                ? new LinkedBlockingQueue<>(queueSize) : new SynchronousQueue<>();
+
+        return new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime,
+                TimeUnit.MILLISECONDS, poolQueue);
+    }
 }
