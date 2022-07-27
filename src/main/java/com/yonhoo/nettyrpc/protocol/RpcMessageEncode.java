@@ -32,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
  **/
 
 @Slf4j
-public class ProtocolNegotiator extends MessageToByteEncoder<RpcMessage> {
+public class RpcMessageEncode extends MessageToByteEncoder<RpcMessage> {
 
     private static AtomicInteger ATOMIC_INTEGER = new AtomicInteger(0);
 

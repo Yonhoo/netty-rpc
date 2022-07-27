@@ -13,7 +13,7 @@ import io.netty.channel.ChannelHandlerContext;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-class ProtocolNegotiatorUnitTest {
+class RpcMessageEncodeUnitTest {
 
     public static final int HEAD_LENGTH = 16;
     public static final int TOTAL_LENGTH = 0;
@@ -44,8 +44,8 @@ class ProtocolNegotiatorUnitTest {
         Serializer serializer = new ProtostuffSerializer();
         byte[] serializeData = serializer.serialize(data);
         int totalLength = HEAD_LENGTH + serializeData.length;
-        ProtocolNegotiator protocolNegotiator = new ProtocolNegotiator();
-        protocolNegotiator.encode(ctx, message, out);
+        RpcMessageEncode rpcMessageEncode = new RpcMessageEncode();
+        rpcMessageEncode.encode(ctx, message, out);
 
         assertThat(out.getInt(TOTAL_LENGTH)).isEqualTo(totalLength);
         assertThat(out.getByte(MAGIC_NUMBER_0)).isEqualTo(RpcConstants.MAGIC_NUMBER[0]);
@@ -70,8 +70,8 @@ class ProtocolNegotiatorUnitTest {
         ByteBuf out = Unpooled.buffer(50);
         RpcMessage message = RpcMessage.builder().build();
 
-        ProtocolNegotiator protocolNegotiator = new ProtocolNegotiator();
-        protocolNegotiator.encode(ctx, message, out);
+        RpcMessageEncode rpcMessageEncode = new RpcMessageEncode();
+        rpcMessageEncode.encode(ctx, message, out);
 
         assertThat(out.getInt(TOTAL_LENGTH)).isEqualTo(46);
         assertThat(out.getByte(MAGIC_NUMBER_0)).isEqualTo(RpcConstants.MAGIC_NUMBER[0]);
@@ -82,7 +82,7 @@ class ProtocolNegotiatorUnitTest {
         assertThat(out.getByte(RESPONSE_TYPE)).isEqualTo(RpcConstants.ERROR_TYPE);
         assertThat(out.getByte(CODEC_TYPE)).isEqualTo(RpcConstants.PROTOCOL_DEFAULT_TYPE);
         assertThat(out.getByte(COMPRESS_TYPE)).isEqualTo(CompressTypeEnum.NONE.getCode());
-        assertThat(out.getInt(REQUEST_ID)).isEqualTo(1);
+        assertThat(out.getInt(REQUEST_ID)).isGreaterThan(0);
 
     }
 }
