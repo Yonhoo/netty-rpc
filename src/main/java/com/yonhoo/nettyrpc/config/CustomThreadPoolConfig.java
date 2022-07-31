@@ -33,11 +33,17 @@ public class CustomThreadPoolConfig {
      * @return ThreadPoolExecutor
      */
     public static ThreadPoolExecutor initPool(int corePoolSize, int maximumPoolSize,
-                                              long keepAliveTime, Integer queueSize) {
+                                              long keepAliveTime, Integer queueSize,
+                                              String preFix) {
         BlockingQueue<Runnable> poolQueue = (queueSize != null && queueSize > 0)
                 ? new LinkedBlockingQueue<>(queueSize) : new SynchronousQueue<>();
 
-        return new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime,
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime,
                 TimeUnit.MILLISECONDS, poolQueue);
+
+        threadPoolExecutor.setThreadFactory(new NamedThreadFactory(
+                preFix, false));
+
+        return threadPoolExecutor;
     }
 }

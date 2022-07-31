@@ -6,6 +6,7 @@ import com.yonhoo.nettyrpc.config.NamedThreadFactory;
 import com.yonhoo.nettyrpc.protocol.RpcMessageDecoder;
 import com.yonhoo.nettyrpc.protocol.RpcMessageEncode;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
@@ -25,30 +26,17 @@ import java.util.List;
 
 @Slf4j
 public class NettyServer {
-    private final List<? extends SocketAddress> addresses;
-    private final RpcMessageEncode rpcMessageEncode;
+    private final SocketAddress address;
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup workerGroup;
     private ThreadPoolExecutor bizThreadPool;
     private final ServerConfig serverConfig;
 
-    public NettyServer(List<SocketAddress> listenAddresses, ServerConfig serverConfig) {
-        this.addresses = Preconditions.checkNotNull(listenAddresses, "address");
+    public NettyServer(SocketAddress listenAddress, ServerConfig serverConfig) {
+        this.address = Preconditions.checkNotNull(listenAddress, "address");
         this.bossGroup = new NioEventLoopGroup(1);
         this.workerGroup = new NioEventLoopGroup();
-        this.rpcMessageEncode = null;
         this.serverConfig = serverConfig;
-    }
-
-    protected ThreadPoolExecutor initThreadPool() {
-        ThreadPoolExecutor threadPool = CustomThreadPoolConfig.initPool(
-                serverConfig.getCorePoolSize(),
-                serverConfig.getMaximumPoolSize(),
-                serverConfig.getThreadAliveTime(),
-                serverConfig.getQueueSize());
-        threadPool.setThreadFactory(new NamedThreadFactory(
-                "SEVER-YL", false));
-        return threadPool;
     }
 
     public void start() {
@@ -71,9 +59,16 @@ public class NettyServer {
                             p.addLast(new IdleStateHandler(30, 0, 0, TimeUnit.SECONDS));
                             p.addLast(new RpcMessageEncode());
                             p.addLast(new RpcMessageDecoder());
+                            p.addLast(new NettyRpcServerHandler());
+                            // only for specific register service use pool
                             //p.addLast(serviceHandlerGroup, new NettyRpcServerHandler());
                         }
                     });
+
+            // bind remote address
+            ChannelFuture f = bootstrap.bind(this.address).sync();
+            // wait for close
+            f.channel().closeFuture().sync();
         } catch (Exception exception) {
             log.error("server start error ", exception);
         } finally {
