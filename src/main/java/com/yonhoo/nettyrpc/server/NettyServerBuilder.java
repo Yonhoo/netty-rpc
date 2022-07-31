@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 @Getter
 public final class NettyServerBuilder extends ServerBuilder<NettyServerBuilder> {
 
-    private final List<SocketAddress> listenAddresses;
+    private final SocketAddress listenAddresse;
     private final Map<String, ServerServiceDefinition> serviceDefinitionMap = new ConcurrentHashMap<>();
     private final Map<Object, Object> channelOptionals;
     private final Map<Object, Object> childChannelOptionals;
@@ -31,7 +31,7 @@ public final class NettyServerBuilder extends ServerBuilder<NettyServerBuilder> 
     private NettyServerBuilder(SocketAddress address) {
         this.channelOptionals = new HashMap<>();
         this.childChannelOptionals = new HashMap<>();
-        this.listenAddresses = List.of(address);
+        this.listenAddresse = address;
     }
 
     @Override
@@ -92,7 +92,7 @@ public final class NettyServerBuilder extends ServerBuilder<NettyServerBuilder> 
 
     @Override
     public Object build() {
-        return new NettyServer(this.listenAddresses, this.serverConfig);
+        return new NettyServer(this.listenAddresse, this.serverConfig);
     }
 
 }
