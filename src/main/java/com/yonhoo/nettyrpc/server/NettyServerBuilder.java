@@ -3,7 +3,6 @@ package com.yonhoo.nettyrpc.server;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
@@ -92,7 +91,7 @@ public final class NettyServerBuilder extends ServerBuilder<NettyServerBuilder> 
 
     @Override
     public Object build() {
-        return new NettyServer(this.listenAddresse, this.serverConfig);
+        return new NettyServer(listenAddresse, serverConfig, serviceDefinitionMap);
     }
 
 }

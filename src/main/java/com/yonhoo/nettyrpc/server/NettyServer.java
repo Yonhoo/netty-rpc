@@ -1,8 +1,6 @@
 package com.yonhoo.nettyrpc.server;
 
 import com.google.common.base.Preconditions;
-import com.yonhoo.nettyrpc.config.CustomThreadPoolConfig;
-import com.yonhoo.nettyrpc.config.NamedThreadFactory;
 import com.yonhoo.nettyrpc.protocol.RpcMessageDecoder;
 import com.yonhoo.nettyrpc.protocol.RpcMessageEncode;
 import io.netty.bootstrap.ServerBootstrap;
@@ -17,12 +15,12 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import java.util.Map;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.SocketAddress;
-import java.util.List;
 
 @Slf4j
 public class NettyServer {
@@ -31,9 +29,11 @@ public class NettyServer {
     private final EventLoopGroup workerGroup;
     private ThreadPoolExecutor bizThreadPool;
     private final ServerConfig serverConfig;
+    private final Map<String, ServerServiceDefinition> serviceDefinitionMap;
 
-    public NettyServer(SocketAddress listenAddress, ServerConfig serverConfig) {
+    public NettyServer(SocketAddress listenAddress, ServerConfig serverConfig, Map<String, ServerServiceDefinition> serviceDefinitionMap) {
         this.address = Preconditions.checkNotNull(listenAddress, "address");
+        this.serviceDefinitionMap = serviceDefinitionMap;
         this.bossGroup = new NioEventLoopGroup(1);
         this.workerGroup = new NioEventLoopGroup();
         this.serverConfig = serverConfig;
