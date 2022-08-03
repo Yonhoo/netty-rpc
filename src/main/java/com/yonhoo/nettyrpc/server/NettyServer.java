@@ -2,7 +2,7 @@ package com.yonhoo.nettyrpc.server;
 
 import com.google.common.base.Preconditions;
 import com.yonhoo.nettyrpc.protocol.RpcMessageDecoder;
-import com.yonhoo.nettyrpc.protocol.RpcMessageEncode;
+import com.yonhoo.nettyrpc.protocol.RpcMessageEncoder;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -43,6 +43,10 @@ public class NettyServer {
         ServerBootstrap bootstrap = new ServerBootstrap();
 
         try {
+
+            NettyRpcServerHandler nettyRpcServerHandler = new NettyRpcServerHandler();
+            nettyRpcServerHandler.setServiceDefiniton(serviceDefinitionMap);
+
             bootstrap.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     .childOption(ChannelOption.TCP_NODELAY, true)
@@ -57,9 +61,9 @@ public class NettyServer {
                             // heartBeat
                             ChannelPipeline p = ch.pipeline();
                             p.addLast(new IdleStateHandler(30, 0, 0, TimeUnit.SECONDS));
-                            p.addLast(new RpcMessageEncode());
+                            p.addLast(new RpcMessageEncoder());
                             p.addLast(new RpcMessageDecoder());
-                            p.addLast(new NettyRpcServerHandler());
+                            p.addLast(nettyRpcServerHandler);
                             // only for specific register service use pool
                             //p.addLast(serviceHandlerGroup, new NettyRpcServerHandler());
                         }

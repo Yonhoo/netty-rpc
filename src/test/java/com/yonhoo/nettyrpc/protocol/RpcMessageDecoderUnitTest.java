@@ -31,8 +31,8 @@ class RpcMessageDecoderUnitTest {
                 .data(response)
                 .build();
 
-        RpcMessageEncode rpcMessageEncode = new RpcMessageEncode();
-        rpcMessageEncode.encode(ctx, message, out);
+        RpcMessageEncoder rpcMessageEncoder = new RpcMessageEncoder();
+        rpcMessageEncoder.encode(ctx, message, out);
 
         //when
         RpcMessageDecoder decoder = new RpcMessageDecoder();

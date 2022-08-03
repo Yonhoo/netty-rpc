@@ -20,6 +20,7 @@ public class RpcRequest implements Serializable {
     private Object[] parameters;
     private Class<?>[] paramTypes;
     private String version;
+    //TODO metadata map
 
     public String getRpcServiceName() {
         return this.serviceName + this.version;

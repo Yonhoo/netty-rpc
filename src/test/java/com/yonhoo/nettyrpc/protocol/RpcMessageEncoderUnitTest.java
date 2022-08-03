@@ -13,7 +13,7 @@ import io.netty.channel.ChannelHandlerContext;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-class RpcMessageEncodeUnitTest {
+class RpcMessageEncoderUnitTest {
 
     public static final int HEAD_LENGTH = 16;
     public static final int TOTAL_LENGTH = 0;
@@ -44,8 +44,8 @@ class RpcMessageEncodeUnitTest {
         Serializer serializer = new ProtostuffSerializer();
         byte[] serializeData = serializer.serialize(data);
         int totalLength = HEAD_LENGTH + serializeData.length;
-        RpcMessageEncode rpcMessageEncode = new RpcMessageEncode();
-        rpcMessageEncode.encode(ctx, message, out);
+        RpcMessageEncoder rpcMessageEncoder = new RpcMessageEncoder();
+        rpcMessageEncoder.encode(ctx, message, out);
 
         assertThat(out.getInt(TOTAL_LENGTH)).isEqualTo(totalLength);
         assertThat(out.getByte(MAGIC_NUMBER_0)).isEqualTo(RpcConstants.MAGIC_NUMBER[0]);
@@ -70,8 +70,8 @@ class RpcMessageEncodeUnitTest {
         ByteBuf out = Unpooled.buffer(50);
         RpcMessage message = RpcMessage.builder().build();
 
-        RpcMessageEncode rpcMessageEncode = new RpcMessageEncode();
-        rpcMessageEncode.encode(ctx, message, out);
+        RpcMessageEncoder rpcMessageEncoder = new RpcMessageEncoder();
+        rpcMessageEncoder.encode(ctx, message, out);
 
         assertThat(out.getInt(TOTAL_LENGTH)).isEqualTo(46);
         assertThat(out.getByte(MAGIC_NUMBER_0)).isEqualTo(RpcConstants.MAGIC_NUMBER[0]);
