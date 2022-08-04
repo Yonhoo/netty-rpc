@@ -14,11 +14,13 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class NettyClient {
     private Bootstrap bootstrap;
     private EventLoopGroup eventLoopGroup;
+    private ConcurrentHashMap<Class<?>, RpcClientProxy> serviceProxyMap;
 
     public Channel connect(String host, int port) {
         eventLoopGroup = new NioEventLoopGroup();
