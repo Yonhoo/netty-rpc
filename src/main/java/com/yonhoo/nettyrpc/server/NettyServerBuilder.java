@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 public final class NettyServerBuilder extends ServerBuilder<NettyServerBuilder> {
 
     private final SocketAddress listenAddresse;
-    private final Map<String, ServerServiceDefinition> serviceDefinitionMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ServerServiceDefinition> serviceDefinitionMap = new ConcurrentHashMap<>();
     private final Map<Object, Object> channelOptionals;
     private final Map<Object, Object> childChannelOptionals;
     private final ServerConfig serverConfig = new ServerConfig();

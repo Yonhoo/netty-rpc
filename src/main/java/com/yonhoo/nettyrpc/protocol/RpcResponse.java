@@ -14,11 +14,10 @@ import lombok.ToString;
 @Setter
 @Builder
 @ToString
-public class RpcResponse<T> implements Serializable {
+public class RpcResponse implements Serializable {
 
     private static final long serialVersionUID = 715745410605631233L;
     public static final int SUCCESS_CODE = 0;
-    private String requestId;
     /**
      * response code
      */
@@ -30,21 +29,20 @@ public class RpcResponse<T> implements Serializable {
     /**
      * response body
      */
-    private T data;
+    private Object data;
 
-    public static <T> RpcResponse<T> success(T data, String requestId) {
-        RpcResponse<T> response = new RpcResponse<>();
+    public static RpcResponse success(Object data) {
+        RpcResponse response = new RpcResponse();
         response.setCode(SUCCESS_CODE);
         response.setMessage("The remote call is successful");
-        response.setRequestId(requestId);
         if (null != data) {
             response.setData(data);
         }
         return response;
     }
 
-    public static <T> RpcResponse<T> fail(Integer errorCode, String errorMessage) {
-        RpcResponse<T> response = new RpcResponse<>();
+    public static RpcResponse fail(Integer errorCode, String errorMessage) {
+        RpcResponse response = new RpcResponse();
         response.setCode(errorCode);
         response.setMessage(errorMessage);
         return response;

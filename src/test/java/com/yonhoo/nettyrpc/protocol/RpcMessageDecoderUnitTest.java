@@ -19,7 +19,7 @@ class RpcMessageDecoderUnitTest {
         ChannelHandlerContext ctx = Mockito.mock(ChannelHandlerContext.class);
 
         ByteBuf out = Unpooled.buffer(50);
-        RpcResponse<String> response = new RpcResponse<>();
+        RpcResponse response = new RpcResponse();
         response.setMessage("success");
         response.setCode(0);
         response.setData("hello world");

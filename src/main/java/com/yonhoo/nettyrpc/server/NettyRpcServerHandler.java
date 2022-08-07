@@ -12,14 +12,14 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.ReferenceCountUtil;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
     public static final int REQUEST_FAIL = -1;
     public static final String CHANNEL_INACTIVE = "channel inactive";
-    private Map<String, ServerServiceDefinition> serviceDefinitionMap;
+    private ConcurrentHashMap<String, ServerServiceDefinition> serviceDefinitionMap;
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
@@ -37,10 +37,10 @@ public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
 
                 rpcMessage.messageType(RpcConstants.RESPONSE_TYPE);
                 if (ctx.channel().isActive() && ctx.channel().isWritable()) {
-                    RpcResponse<Object> rpcResponse = RpcResponse.success(result, rpcRequest.getRequestId());
+                    RpcResponse rpcResponse = RpcResponse.success(result);
                     rpcMessage.data(rpcResponse);
                 } else {
-                    RpcResponse<Object> rpcResponse = RpcResponse.fail(REQUEST_FAIL, CHANNEL_INACTIVE);
+                    RpcResponse rpcResponse = RpcResponse.fail(REQUEST_FAIL, CHANNEL_INACTIVE);
                     rpcMessage.data(rpcResponse);
                     log.error("not writable now, message dropped");
                 }
@@ -49,7 +49,7 @@ public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
             }
         } catch (Exception e) {
             log.error("handle request error", e);
-            RpcResponse<Object> rpcResponse = RpcResponse.fail(REQUEST_FAIL, e.getMessage());
+            RpcResponse rpcResponse = RpcResponse.fail(REQUEST_FAIL, e.getMessage());
             RpcMessage rpcMessage = RpcMessage.builder()
                     .data(rpcResponse)
                     .messageType(RpcConstants.ERROR_TYPE)
@@ -83,7 +83,7 @@ public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    public void setServiceDefiniton(Map<String, ServerServiceDefinition> serviceDefinitionMap) {
+    public void setServiceDefinition(ConcurrentHashMap<String, ServerServiceDefinition> serviceDefinitionMap) {
         this.serviceDefinitionMap = serviceDefinitionMap;
     }
 

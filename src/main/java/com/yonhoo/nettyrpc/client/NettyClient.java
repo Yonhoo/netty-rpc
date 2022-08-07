@@ -1,7 +1,12 @@
 package com.yonhoo.nettyrpc.client;
 
+import com.yonhoo.nettyrpc.common.CompressTypeEnum;
+import com.yonhoo.nettyrpc.common.RpcConstants;
+import com.yonhoo.nettyrpc.protocol.RpcMessage;
 import com.yonhoo.nettyrpc.protocol.RpcMessageDecoder;
 import com.yonhoo.nettyrpc.protocol.RpcMessageEncoder;
+import com.yonhoo.nettyrpc.protocol.RpcRequest;
+import com.yonhoo.nettyrpc.protocol.RpcResponse;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -14,13 +19,18 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class NettyClient {
     private Bootstrap bootstrap;
     private EventLoopGroup eventLoopGroup;
+    private Channel channel;
     private ConcurrentHashMap<Class<?>, RpcClientProxy> serviceProxyMap;
+    private final AtomicInteger streamId = new AtomicInteger();
+    private final NettyRpcClientHandler nettyRpcClientHandler = new NettyRpcClientHandler();
 
     public Channel connect(String host, int port) {
         eventLoopGroup = new NioEventLoopGroup();
@@ -41,10 +51,48 @@ public class NettyClient {
                         p.addLast(new IdleStateHandler(0, 5, 0, TimeUnit.SECONDS));
                         p.addLast(new RpcMessageEncoder());
                         p.addLast(new RpcMessageDecoder());
-                        p.addLast(new NettyRpcClientHandler());
+                        p.addLast(nettyRpcClientHandler);
                     }
                 });
 
-        return bootstrap.connect().awaitUninterruptibly().channel();
+        this.channel = bootstrap.connect().awaitUninterruptibly().channel();
+        return channel;
+    }
+
+    public <T> T registerService(Class<T> classType) {
+        return null;
+    }
+
+    public Object syncInvoke(RpcRequest request) {
+        if (this.isAvailable()) {
+            try {
+                RpcMessage rpcMessage = RpcMessage.builder()
+                        .messageType(RpcConstants.REQUEST_TYPE)
+                        .requestId(streamId.getAndIncrement())
+                        .compress(CompressTypeEnum.NONE.getCode())
+                        .data(request)
+                        .build();
+
+                CompletableFuture<RpcResponse> responseFuture = new CompletableFuture<>();
+                nettyRpcClientHandler.setStreamResponsePromise(rpcMessage.getRequestId(), responseFuture);
+                //TODO add future listener handle
+                this.channel.writeAndFlush(rpcMessage);
+                return responseFuture.get();
+            } catch (Exception e) {
+                throw new RuntimeException("send request error", e);
+            }
+        } else {
+            throw new RuntimeException("connect channel is inactive");
+        }
+    }
+
+    public Object syncInvoke(RpcRequest request, int timeout) {
+
+        return null;
+    }
+
+
+    private boolean isAvailable() {
+        return this.channel.isOpen() && this.channel.isActive();
     }
 }

@@ -16,6 +16,7 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
@@ -29,9 +30,10 @@ public class NettyServer {
     private final EventLoopGroup workerGroup;
     private ThreadPoolExecutor bizThreadPool;
     private final ServerConfig serverConfig;
-    private final Map<String, ServerServiceDefinition> serviceDefinitionMap;
+    private final ConcurrentHashMap<String, ServerServiceDefinition> serviceDefinitionMap;
 
-    public NettyServer(SocketAddress listenAddress, ServerConfig serverConfig, Map<String, ServerServiceDefinition> serviceDefinitionMap) {
+    public NettyServer(SocketAddress listenAddress, ServerConfig serverConfig,
+                       ConcurrentHashMap<String, ServerServiceDefinition> serviceDefinitionMap) {
         this.address = Preconditions.checkNotNull(listenAddress, "address");
         this.serviceDefinitionMap = serviceDefinitionMap;
         this.bossGroup = new NioEventLoopGroup(1);
@@ -45,7 +47,7 @@ public class NettyServer {
         try {
 
             NettyRpcServerHandler nettyRpcServerHandler = new NettyRpcServerHandler();
-            nettyRpcServerHandler.setServiceDefiniton(serviceDefinitionMap);
+            nettyRpcServerHandler.setServiceDefinition(serviceDefinitionMap);
 
             bootstrap.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
