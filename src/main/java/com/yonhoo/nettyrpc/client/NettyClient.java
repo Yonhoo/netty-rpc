@@ -9,6 +9,7 @@ import com.yonhoo.nettyrpc.protocol.RpcRequest;
 import com.yonhoo.nettyrpc.protocol.RpcResponse;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
@@ -23,7 +24,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class NettyClient {
     private Bootstrap bootstrap;
     private EventLoopGroup eventLoopGroup;
@@ -55,7 +58,15 @@ public class NettyClient {
                     }
                 });
 
-        this.channel = bootstrap.connect().awaitUninterruptibly().channel();
+        this.channel = bootstrap.connect().awaitUninterruptibly()
+                .addListener((ChannelFutureListener) future -> {
+                    if (future.isSuccess()) {
+                        log.info("The netty client connected to ip [{}] , port [{}] successful!", host, port);
+                    } else {
+                        throw new IllegalStateException("netty client start error");
+                    }
+                }).channel()
+        ;
         return channel;
     }
 

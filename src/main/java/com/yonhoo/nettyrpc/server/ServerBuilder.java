@@ -1,26 +1,20 @@
 package com.yonhoo.nettyrpc.server;
 
-public abstract class ServerBuilder<T extends ServerBuilder<T>> {
+public interface ServerBuilder {
 
-    public abstract T forPort(int port);
+    ServerBuilder addService(ServerServiceDefinition service);
 
-    public abstract T addService(ServerServiceDefinition service);
+    ServerBuilder addTransportFilter(Object filter);
 
-    public T intercept(Object interceptor) {
-        throw new UnsupportedOperationException();
-    }
+    ServerBuilder intercept(Object interceptor);
 
-    public T addTransportFilter(Object filter) {
-        throw new UnsupportedOperationException();
-    }
+    Object build();
 
-    public abstract Object build();
+    ServerBuilder keepAliveTime(long aliveMilliSeconds);
 
-    public abstract T keepAliveTime(long aliveMilliSeconds);
+    ServerBuilder bizPoolConfig(int corePoolSize, int maximumPoolSize, long keepAliveTime);
 
-    public abstract T bizPoolConfig(int corePoolSize, int maximumPoolSize, long keepAliveTime);
-
-    public abstract T bizPoolConfig(int corePoolSize, int maximumPoolSize, long keepAliveTime,
+    ServerBuilder bizPoolConfig(int corePoolSize, int maximumPoolSize, long keepAliveTime,
                                     int queueSize);
 
 }

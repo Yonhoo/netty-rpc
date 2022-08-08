@@ -12,6 +12,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.ReferenceCountUtil;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
     public static final int REQUEST_FAIL = -1;
     public static final String CHANNEL_INACTIVE = "channel inactive";
-    private ConcurrentHashMap<String, ServerServiceDefinition> serviceDefinitionMap;
+    private static ConcurrentHashMap<String, ServerServiceDefinition> serviceDefinitionMap = new ConcurrentHashMap<>();
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
@@ -83,8 +84,10 @@ public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    public void setServiceDefinition(ConcurrentHashMap<String, ServerServiceDefinition> serviceDefinitionMap) {
-        this.serviceDefinitionMap = serviceDefinitionMap;
+    public static void setServiceDefinition(List<ServerServiceDefinition> serviceDefinitionList) {
+        serviceDefinitionList.forEach(serverServiceDefinition ->
+                serviceDefinitionMap.put(serverServiceDefinition.getServiceName(), serverServiceDefinition)
+        );
     }
 
     @Override

@@ -5,6 +5,7 @@ import com.yonhoo.nettyrpc.protocol.RpcMessageDecoder;
 import com.yonhoo.nettyrpc.protocol.RpcMessageEncoder;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
@@ -14,11 +15,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.timeout.IdleStateHandler;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.SocketAddress;
@@ -30,12 +28,11 @@ public class NettyServer {
     private final EventLoopGroup workerGroup;
     private ThreadPoolExecutor bizThreadPool;
     private final ServerConfig serverConfig;
-    private final ConcurrentHashMap<String, ServerServiceDefinition> serviceDefinitionMap;
 
     public NettyServer(SocketAddress listenAddress, ServerConfig serverConfig,
-                       ConcurrentHashMap<String, ServerServiceDefinition> serviceDefinitionMap) {
+                       List<ServerServiceDefinition> serviceDefinitionList) {
         this.address = Preconditions.checkNotNull(listenAddress, "address");
-        this.serviceDefinitionMap = serviceDefinitionMap;
+        NettyRpcServerHandler.setServiceDefinition(serviceDefinitionList);
         this.bossGroup = new NioEventLoopGroup(1);
         this.workerGroup = new NioEventLoopGroup();
         this.serverConfig = serverConfig;
@@ -45,10 +42,6 @@ public class NettyServer {
         ServerBootstrap bootstrap = new ServerBootstrap();
 
         try {
-
-            NettyRpcServerHandler nettyRpcServerHandler = new NettyRpcServerHandler();
-            nettyRpcServerHandler.setServiceDefinition(serviceDefinitionMap);
-
             bootstrap.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     .childOption(ChannelOption.TCP_NODELAY, true)
@@ -62,17 +55,24 @@ public class NettyServer {
                         protected void initChannel(SocketChannel ch) {
                             // heartBeat
                             ChannelPipeline p = ch.pipeline();
-                            p.addLast(new IdleStateHandler(30, 0, 0, TimeUnit.SECONDS));
+                            //p.addLast(new IdleStateHandler(30, 0, 0, TimeUnit.SECONDS));
                             p.addLast(new RpcMessageEncoder());
                             p.addLast(new RpcMessageDecoder());
-                            p.addLast(nettyRpcServerHandler);
+                            p.addLast(new NettyRpcServerHandler());
                             // only for specific register service use pool
                             //p.addLast(serviceHandlerGroup, new NettyRpcServerHandler());
                         }
                     });
 
             // bind remote address
-            ChannelFuture f = bootstrap.bind(this.address).sync();
+            ChannelFuture f = bootstrap.bind(this.address).sync()
+                    .addListener((ChannelFutureListener) future -> {
+                        if (future.isSuccess()) {
+                            log.info("The netty server has connected [{}] successful!", address);
+                        } else {
+                            throw new IllegalStateException("netty server start error");
+                        }
+                    });
             // wait for close
             f.channel().closeFuture().sync();
         } catch (Exception exception) {

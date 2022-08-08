@@ -2,41 +2,51 @@ package com.yonhoo.nettyrpc.server;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Getter
-public final class NettyServerBuilder extends ServerBuilder<NettyServerBuilder> {
+public class NettyServerBuilder implements ServerBuilder {
 
-    private final SocketAddress listenAddresse;
-    private final ConcurrentHashMap<String, ServerServiceDefinition> serviceDefinitionMap = new ConcurrentHashMap<>();
+    private final SocketAddress listenAddress;
+    private final List<ServerServiceDefinition> serviceDefinitionList = new ArrayList<>();
     private final Map<Object, Object> channelOptionals;
     private final Map<Object, Object> childChannelOptionals;
     private final ServerConfig serverConfig = new ServerConfig();
 
-    @Override
-    public NettyServerBuilder forPort(int port) {
+    public static NettyServerBuilder forPort(int port) {
         return forAddress(new InetSocketAddress(port));
     }
 
-    private NettyServerBuilder forAddress(InetSocketAddress address) {
+    private static NettyServerBuilder forAddress(InetSocketAddress address) {
         return new NettyServerBuilder(address);
     }
 
     private NettyServerBuilder(SocketAddress address) {
         this.channelOptionals = new HashMap<>();
         this.childChannelOptionals = new HashMap<>();
-        this.listenAddresse = address;
+        this.listenAddress = address;
     }
 
     @Override
     public NettyServerBuilder addService(ServerServiceDefinition service) {
-        serviceDefinitionMap.put(service.getServiceName(), service);
+        serviceDefinitionList.add(service);
         return this;
+    }
+
+    @Override
+    public ServerBuilder addTransportFilter(Object filter) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public ServerBuilder intercept(Object interceptor) {
+        throw new IllegalArgumentException();
     }
 
     /**
@@ -90,8 +100,8 @@ public final class NettyServerBuilder extends ServerBuilder<NettyServerBuilder> 
     }
 
     @Override
-    public Object build() {
-        return new NettyServer(listenAddresse, serverConfig, serviceDefinitionMap);
+    public NettyServer build() {
+        return new NettyServer(listenAddress, serverConfig, serviceDefinitionList);
     }
 
 }
