@@ -34,8 +34,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RpcMessageEncoder extends MessageToByteEncoder<RpcMessage> {
 
-    private static AtomicInteger ATOMIC_INTEGER = new AtomicInteger(0);
-
     @Override
     protected void encode(ChannelHandlerContext ctx, RpcMessage rpcMessage, ByteBuf out) {
         int tailIndex = out.writerIndex();
@@ -46,9 +44,10 @@ public class RpcMessageEncoder extends MessageToByteEncoder<RpcMessage> {
 
             fillFullLength(out, fullLength);
         } catch (Exception e) {
+            //TODO client encode throw exception
             out.writerIndex(tailIndex);
             log.error("ProtocolNegotiator encode error ", e);
-            writeErrorHead(out);
+            writeErrorHead(rpcMessage, out);
             int fullLength = writeBody(e.getMessage(), out);
 
             fillFullLength(out, fullLength);
@@ -72,7 +71,7 @@ public class RpcMessageEncoder extends MessageToByteEncoder<RpcMessage> {
         return fullLength;
     }
 
-    private void writeErrorHead(ByteBuf out) {
+    private void writeErrorHead(RpcMessage rpcMessage, ByteBuf out) {
         //leave a place to write the value of full length
         out.writerIndex(out.writerIndex() + 4);
 
@@ -80,11 +79,11 @@ public class RpcMessageEncoder extends MessageToByteEncoder<RpcMessage> {
         out.writeByte(RpcConstants.VERSION);
 
         out.writeByte(RpcConstants.ERROR_TYPE);
-        out.writeByte(RpcConstants.PROTOCOL_DEFAULT_TYPE);
-        out.writeByte(CompressTypeEnum.NONE.getCode());
+        out.writeByte(rpcMessage.getCodec());
+        out.writeByte(rpcMessage.getCompress());
 
         // reuqest id
-        out.writeInt(ATOMIC_INTEGER.incrementAndGet());
+        out.writeInt(rpcMessage.getRequestId());
     }
 
     private void writeHead(RpcMessage rpcMessage, ByteBuf out) {
@@ -106,7 +105,7 @@ public class RpcMessageEncoder extends MessageToByteEncoder<RpcMessage> {
         }
 
         // reuqest id
-        out.writeInt(ATOMIC_INTEGER.incrementAndGet());
+        out.writeInt(rpcMessage.getRequestId());
     }
 
     private void fillFullLength(ByteBuf out, int fullLength) {

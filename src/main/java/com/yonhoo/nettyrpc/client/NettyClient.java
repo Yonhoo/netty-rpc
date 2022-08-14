@@ -80,6 +80,7 @@ public class NettyClient {
                 RpcMessage rpcMessage = RpcMessage.builder()
                         .messageType(RpcConstants.REQUEST_TYPE)
                         .requestId(streamId.getAndIncrement())
+                        .codec(RpcConstants.PROTOCOL_DEFAULT_TYPE)
                         .compress(CompressTypeEnum.NONE.getCode())
                         .data(request)
                         .build();
@@ -88,7 +89,7 @@ public class NettyClient {
                 nettyRpcClientHandler.setStreamResponsePromise(rpcMessage.getRequestId(), responseFuture);
                 //TODO add future listener handle
                 this.channel.writeAndFlush(rpcMessage);
-                return responseFuture.get();
+                return getResponse(responseFuture.get());
             } catch (Exception e) {
                 throw new RuntimeException("send request error", e);
             }
@@ -100,6 +101,13 @@ public class NettyClient {
     public Object syncInvoke(RpcRequest request, int timeout) {
 
         return null;
+    }
+
+    private Object getResponse(RpcResponse response) {
+        if (response.isSuccess()) {
+            return response.getData();
+        }
+        throw new RuntimeException("invoke method error: " + response.getMessage());
     }
 
 

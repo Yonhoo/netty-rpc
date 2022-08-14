@@ -31,6 +31,10 @@ public class RpcResponse implements Serializable {
      */
     private Object data;
 
+    public boolean isSuccess() {
+        return code == 0;
+    }
+
     public static RpcResponse success(Object data) {
         RpcResponse response = new RpcResponse();
         response.setCode(SUCCESS_CODE);

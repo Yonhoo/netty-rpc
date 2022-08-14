@@ -1,5 +1,6 @@
 package com.yonhoo.nettyrpc.protocol;
 
+import com.yonhoo.nettyrpc.common.RpcConstants;
 import lombok.Builder;
 import lombok.Value;
 
@@ -47,4 +48,14 @@ public class RpcMessage {
      * request data
      */
     private Object data;
+
+    public RpcMessage SuccessResponse(Object data) {
+        return RpcMessage.builder()
+                .requestId(requestId)
+                .messageType(RpcConstants.RESPONSE_TYPE)
+                .codec(codec)
+                .compress(compress)
+                .data(data)
+                .build();
+    }
 }

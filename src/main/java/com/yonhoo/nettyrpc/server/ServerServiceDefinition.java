@@ -3,6 +3,7 @@ package com.yonhoo.nettyrpc.server;
 
 import com.yonhoo.nettyrpc.exception.RpcErrorCode;
 import com.yonhoo.nettyrpc.exception.RpcException;
+import java.lang.reflect.Method;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -17,11 +18,14 @@ public class ServerServiceDefinition {
         this.classType = classType;
     }
 
-    public Object invokeMethod(String methodName, Class<?>[] parameters) {
+    public Object invokeMethod(String methodName, Class<?>[] parameterTypes, Object[] parameters) {
         try {
             log.info(serviceName + " invoke " + methodName);
-            return serviceImpl.getClass().getMethod(methodName, parameters);
+            Method method = serviceImpl.getClass().getMethod(methodName, parameterTypes);
+            Object response = method.invoke(serviceImpl, parameters);
+            return response;
         } catch (Exception e) {
+            log.error("invoke {} service : {} error", serviceName, methodName, e);
             throw RpcException.with(RpcErrorCode.SERVICE_NOT_THIS_METHOD);
         }
     }

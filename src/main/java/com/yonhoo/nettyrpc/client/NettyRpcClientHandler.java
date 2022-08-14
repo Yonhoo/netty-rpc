@@ -15,14 +15,15 @@ public class NettyRpcClientHandler extends ChannelInboundHandlerAdapter {
             new ConcurrentHashMap<>();
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
         RpcMessage rpcMessage = (RpcMessage) msg;
         try {
             CompletableFuture<RpcResponse> responseFuture = streamIdPromiseMap.remove(rpcMessage.getRequestId());
             if (RpcConstants.RESPONSE_TYPE == rpcMessage.getMessageType()) {
                 responseFuture.complete((RpcResponse) rpcMessage.getData());
             } else if (RpcConstants.ERROR_TYPE == rpcMessage.getMessageType()) {
-                throw new RuntimeException(((RpcResponse) rpcMessage.getData()).getMessage());
+                //TODO add request method
+                throw new RuntimeException("invoke method error");
             }
         } catch (NullPointerException e) {
             log.warn("this stream message was removed: {}", rpcMessage);
