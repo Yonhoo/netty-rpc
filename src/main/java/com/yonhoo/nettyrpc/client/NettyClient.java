@@ -2,6 +2,8 @@ package com.yonhoo.nettyrpc.client;
 
 import com.yonhoo.nettyrpc.common.CompressTypeEnum;
 import com.yonhoo.nettyrpc.common.RpcConstants;
+import com.yonhoo.nettyrpc.exception.RpcErrorCode;
+import com.yonhoo.nettyrpc.exception.RpcException;
 import com.yonhoo.nettyrpc.protocol.RpcMessage;
 import com.yonhoo.nettyrpc.protocol.RpcMessageDecoder;
 import com.yonhoo.nettyrpc.protocol.RpcMessageEncoder;
@@ -22,6 +24,7 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
@@ -65,8 +68,7 @@ public class NettyClient {
                     } else {
                         throw new IllegalStateException("netty client start error");
                     }
-                }).channel()
-        ;
+                }).channel();
         return channel;
     }
 
@@ -90,16 +92,20 @@ public class NettyClient {
                 //TODO add future listener handle
                 this.channel.writeAndFlush(rpcMessage);
                 return getResponse(responseFuture.get());
-            } catch (Exception e) {
-                throw new RuntimeException("send request error", e);
+            } catch (InterruptedException | ExecutionException e) {
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+                log.error("invoke service[{}] method[{}] send message error", request.getServiceName(), request.getMethodName(), e);
+                throw RpcException.with(RpcErrorCode.RPC_INVOKE_METHOD_ERROR);
             }
         } else {
-            throw new RuntimeException("connect channel is inactive");
+            log.error("invoke service[{}] method[{}] error", request.getServiceName(), request.getMethodName());
+            throw RpcException.with(RpcErrorCode.RPC_CHANNEL_IS_NOT_ACTIVE);
         }
     }
 
     public Object syncInvoke(RpcRequest request, int timeout) {
-
         return null;
     }
 
@@ -107,9 +113,12 @@ public class NettyClient {
         if (response.isSuccess()) {
             return response.getData();
         }
-        throw new RuntimeException("invoke method error: " + response.getMessage());
+        throw new RpcException(response.getMessage());
     }
 
+    public void close() {
+        eventLoopGroup.shutdownGracefully().awaitUninterruptibly();
+    }
 
     private boolean isAvailable() {
         return this.channel.isOpen() && this.channel.isActive();

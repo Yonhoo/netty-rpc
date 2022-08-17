@@ -76,12 +76,18 @@ public class NettyServer {
             // wait for close
             f.channel().closeFuture().sync();
         } catch (Exception exception) {
-            log.error("server start error ", exception);
+            if (exception instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            log.error("server start address [{}] error ", address.toString(), exception);
         } finally {
             log.error("shutdown bossGroup and workerGroup");
             bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
         }
 
+    }
+
+    public void close() {
+        bossGroup.shutdownGracefully();
     }
 }

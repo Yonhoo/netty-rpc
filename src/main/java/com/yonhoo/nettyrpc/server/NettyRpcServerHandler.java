@@ -1,6 +1,5 @@
 package com.yonhoo.nettyrpc.server;
 
-import com.yonhoo.nettyrpc.common.CompressTypeEnum;
 import com.yonhoo.nettyrpc.common.RpcConstants;
 import com.yonhoo.nettyrpc.exception.RpcErrorCode;
 import com.yonhoo.nettyrpc.exception.RpcException;
@@ -25,33 +24,35 @@ public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        RpcMessage requestRpcMessage = ((RpcMessage) msg);
         try {
-            if (msg instanceof RpcMessage) {
-                RpcMessage requestRpcMessage = ((RpcMessage) msg);
-                log.info("server receive msg: [{}] ", msg);
+            log.info("server receive msg: [{}] ", msg);
 
-                checkMessageValid((RpcMessage) msg);
+            checkMessageValid((RpcMessage) msg);
 
-                RpcRequest rpcRequestData = (RpcRequest) requestRpcMessage.getData();
+            RpcRequest rpcRequestData = (RpcRequest) requestRpcMessage.getData();
 
-                Object result = doRequestInvoke(rpcRequestData);
+            Object result = doRequestInvoke(rpcRequestData);
 
-                RpcResponse responseMessage;
-                if (ctx.channel().isActive() && ctx.channel().isWritable()) {
-                    responseMessage = RpcResponse.success(result);
-                } else {
-                    responseMessage = RpcResponse.fail(REQUEST_FAIL, CHANNEL_INACTIVE);
-                    log.error("not writable now, message dropped");
-                }
-
-                ctx.writeAndFlush(requestRpcMessage.SuccessResponse(responseMessage)).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+            RpcResponse responseMessage;
+            if (ctx.channel().isActive() && ctx.channel().isWritable()) {
+                responseMessage = RpcResponse.success(result);
+            } else {
+                responseMessage = RpcResponse.fail(REQUEST_FAIL, CHANNEL_INACTIVE);
+                log.error("not writable now, message dropped");
             }
+
+            ctx.writeAndFlush(requestRpcMessage.SuccessResponse(responseMessage)).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+
         } catch (Exception e) {
             log.error("handle request error", e);
             RpcResponse rpcResponse = RpcResponse.fail(REQUEST_FAIL, e.getMessage());
             RpcMessage rpcMessage = RpcMessage.builder()
                     .data(rpcResponse)
-                    .messageType(RpcConstants.ERROR_TYPE)
+                    .requestId(requestRpcMessage.getRequestId())
+                    .codec(requestRpcMessage.getCodec())
+                    .compress(requestRpcMessage.getCompress())
+                    .messageType(RpcConstants.RESPONSE_TYPE)
                     .build();
             ctx.writeAndFlush(rpcMessage).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
 
@@ -103,7 +104,7 @@ public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.error("server catch exception");
+        log.error("server catch exception", cause);
         cause.printStackTrace();
         ctx.close();
     }

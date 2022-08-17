@@ -33,14 +33,7 @@ public class RpcMessageDecoder extends LengthFieldBasedFrameDecoder {
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) {
 
         if (in.readableBytes() >= RpcConstants.TOTAL_LENGTH) {
-            try {
-                return decodeFrame(in);
-            } catch (Exception e) {
-                log.error("Decode frame error!", e);
-                throw e;
-            } finally {
-                in.release();
-            }
+            return decodeFrame(in);
         } else {
             throw new RuntimeException("read in data total length less than 16 bytes");
         }

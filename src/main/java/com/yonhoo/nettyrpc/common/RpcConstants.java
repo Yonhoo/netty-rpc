@@ -21,6 +21,9 @@ public class RpcConstants {
     //codec type
     public static final byte PROTOCOL_DEFAULT_TYPE = 1;
 
+    //request error
+    public static final String REQUEST_ERROR = "-1";
+
     //ping
     public static final byte HEARTBEAT_REQUEST_TYPE = 3;
     //pong

@@ -4,7 +4,7 @@ import com.yonhoo.nettyrpc.client.NettyClient;
 import com.yonhoo.nettyrpc.protocol.RpcRequest;
 import io.netty.channel.Channel;
 
-public class HelloWorldClientMain {
+public class HelloWorldClientInvokeSayError {
     public static void main(String[] args) {
         NettyClient nettyClient = new NettyClient();
         Channel channel = nettyClient.connect("0.0.0.0", 13456);
@@ -12,9 +12,7 @@ public class HelloWorldClientMain {
         if (channel.isActive()) {
 
             RpcRequest request = RpcRequest.builder()
-                    .methodName("sayHello")
-                    .paramTypes(new Class[] {String.class})
-                    .parameters(new String[] {"weclome!"})
+                    .methodName("sayError")
                     .serviceName(HelloWorld.class.getName())
                     .build();
 
@@ -22,6 +20,6 @@ public class HelloWorldClientMain {
             System.out.println(response);
         }
 
-        channel.close();
+        nettyClient.close();
     }
 }

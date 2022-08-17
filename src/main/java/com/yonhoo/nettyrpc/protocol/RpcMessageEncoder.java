@@ -2,6 +2,8 @@ package com.yonhoo.nettyrpc.protocol;
 
 import com.yonhoo.nettyrpc.common.CompressTypeEnum;
 import com.yonhoo.nettyrpc.common.RpcConstants;
+import com.yonhoo.nettyrpc.exception.RpcErrorCode;
+import com.yonhoo.nettyrpc.exception.RpcException;
 import com.yonhoo.nettyrpc.serialize.ProtostuffSerializer;
 import com.yonhoo.nettyrpc.serialize.Serializer;
 import io.netty.buffer.ByteBuf;
@@ -44,7 +46,9 @@ public class RpcMessageEncoder extends MessageToByteEncoder<RpcMessage> {
 
             fillFullLength(out, fullLength);
         } catch (Exception e) {
-            //TODO client encode throw exception
+            if (RpcConstants.REQUEST_TYPE == rpcMessage.getMessageType()) {
+                throw e;
+            }
             out.writerIndex(tailIndex);
             log.error("ProtocolNegotiator encode error ", e);
             writeErrorHead(rpcMessage, out);
@@ -94,7 +98,7 @@ public class RpcMessageEncoder extends MessageToByteEncoder<RpcMessage> {
         out.writeByte(RpcConstants.VERSION);
 
         if (rpcMessage.getMessageType() == 0) {
-            throw new RuntimeException("message type not be null");
+            throw RpcException.with(RpcErrorCode.RPC_MESSAGE_TYPE_NOT_BE_EMPTY);
         }
         out.writeByte(rpcMessage.getMessageType());
         out.writeByte(rpcMessage.getCodec());

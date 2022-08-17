@@ -9,6 +9,18 @@ public class RpcException extends RuntimeException {
         this.errorMessage = errorMessage;
     }
 
+    public RpcException(String msg) {
+        super(msg);
+        this.errorCode = "-1";
+        this.errorMessage = msg;
+    }
+
+    public RpcException(String message, Throwable cause) {
+        super(message, cause);
+        this.errorCode = "-1";
+        this.errorMessage = message;
+    }
+
     public static RpcException with(RpcErrorCode rpcErrorCode) {
         return new RpcException(rpcErrorCode.getCode(), rpcErrorCode.getMessage());
     }
