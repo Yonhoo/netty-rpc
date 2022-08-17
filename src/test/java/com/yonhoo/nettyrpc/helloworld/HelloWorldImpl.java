@@ -1,4 +1,4 @@
-package com.yonhoo.nettyrpc.example;
+package com.yonhoo.nettyrpc.helloworld;
 
 public class HelloWorldImpl implements HelloWorld {
     @Override

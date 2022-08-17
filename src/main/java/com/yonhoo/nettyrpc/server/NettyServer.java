@@ -15,8 +15,10 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.timeout.IdleStateHandler;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.SocketAddress;
@@ -55,7 +57,7 @@ public class NettyServer {
                         protected void initChannel(SocketChannel ch) {
                             // heartBeat
                             ChannelPipeline p = ch.pipeline();
-                            //p.addLast(new IdleStateHandler(30, 0, 0, TimeUnit.SECONDS));
+                            p.addLast(new IdleStateHandler(0, 0, 30, TimeUnit.SECONDS));
                             p.addLast(new RpcMessageEncoder());
                             p.addLast(new RpcMessageDecoder());
                             p.addLast(new NettyRpcServerHandler());

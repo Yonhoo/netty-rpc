@@ -90,15 +90,15 @@ public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        if (evt instanceof IdleStateEvent) {
-            IdleState state = ((IdleStateEvent) evt).state();
-            if (state == IdleState.READER_IDLE) {
+    public void userEventTriggered(ChannelHandlerContext ctx, Object event) throws Exception {
+        if (event instanceof IdleStateEvent) {
+            IdleState state = ((IdleStateEvent) event).state();
+            if (state == IdleState.ALL_IDLE) {
                 log.info("idle check happen, so close the connection");
                 ctx.close();
             }
         } else {
-            super.userEventTriggered(ctx, evt);
+            super.userEventTriggered(ctx, event);
         }
     }
 
