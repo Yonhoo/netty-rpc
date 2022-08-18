@@ -36,7 +36,19 @@ public class NettyRpcClientHandler extends ChannelInboundHandlerAdapter {
         return streamIdPromiseMap.get(streamId);
     }
 
-    public Object onException(Throwable e) {
-        return null;
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        log.error("channel exception caught", cause);
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        log.error("channel closed");
+        streamIdPromiseMap.forEach((streamId, responsePromise) -> {
+            if (!responsePromise.isDone()) {
+                responsePromise.complete(RpcResponse.fail(-1, "channel close"));
+            }
+        });
+        streamIdPromiseMap.clear();
     }
 }
