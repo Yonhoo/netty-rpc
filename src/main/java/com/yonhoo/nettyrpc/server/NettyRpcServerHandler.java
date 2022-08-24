@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
     public static final int REQUEST_FAIL = -1;
     public static final String CHANNEL_INACTIVE = "channel inactive";
-    private static ConcurrentHashMap<String, ServerServiceDefinition> serviceDefinitionMap = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, ServerServiceDefinition> serviceDefinitionMap = new ConcurrentHashMap<>();
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
@@ -44,7 +44,7 @@ public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
 
             ctx.writeAndFlush(requestRpcMessage.SuccessResponse(responseMessage)).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
 
-        } catch (Exception e) {
+        } catch (RpcException e) {
             log.error("handle request error", e);
             RpcResponse rpcResponse = RpcResponse.fail(REQUEST_FAIL, e.getMessage());
             RpcMessage rpcMessage = RpcMessage.builder()

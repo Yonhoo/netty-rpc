@@ -57,7 +57,7 @@ public class NettyServer {
                         protected void initChannel(SocketChannel ch) {
                             // heartBeat
                             ChannelPipeline p = ch.pipeline();
-                            p.addLast(new IdleStateHandler(0, 0, 30, TimeUnit.SECONDS));
+                            p.addLast(new IdleStateHandler(0, 0, 90, TimeUnit.SECONDS));
                             p.addLast(new RpcMessageEncoder());
                             p.addLast(new RpcMessageDecoder());
                             p.addLast(new NettyRpcServerHandler());
