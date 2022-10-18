@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.yonhoo.nettyrpc.protocol.RpcMessageDecoder;
 import com.yonhoo.nettyrpc.protocol.RpcMessageEncoder;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
@@ -16,6 +17,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.concurrent.Promise;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +44,6 @@ public class NettyServer {
 
     public void start() {
         ServerBootstrap bootstrap = new ServerBootstrap();
-
         try {
             bootstrap.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
@@ -57,7 +58,6 @@ public class NettyServer {
                         protected void initChannel(SocketChannel ch) {
                             // heartBeat
                             ChannelPipeline p = ch.pipeline();
-                            p.addLast(new IdleStateHandler(0, 0, 90, TimeUnit.SECONDS));
                             p.addLast(new RpcMessageEncoder());
                             p.addLast(new RpcMessageDecoder());
                             p.addLast(new NettyRpcServerHandler());
