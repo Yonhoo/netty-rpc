@@ -56,7 +56,6 @@ public class NettyServer {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) {
-                            // heartBeat
                             ChannelPipeline p = ch.pipeline();
                             p.addLast(new RpcMessageEncoder());
                             p.addLast(new RpcMessageDecoder());

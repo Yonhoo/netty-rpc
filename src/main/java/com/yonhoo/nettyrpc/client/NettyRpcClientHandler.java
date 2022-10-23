@@ -5,12 +5,10 @@ import com.yonhoo.nettyrpc.protocol.RpcMessage;
 import com.yonhoo.nettyrpc.protocol.RpcResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -43,6 +41,19 @@ public class NettyRpcClientHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         log.error("channel exception caught", cause);
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object event) throws Exception {
+        if (event instanceof IdleStateEvent) {
+            IdleState state = ((IdleStateEvent) event).state();
+            if (state == IdleState.ALL_IDLE) {
+                log.info("idle check happen, so close the connection");
+                ctx.close();
+            }
+        } else {
+            super.userEventTriggered(ctx, event);
+        }
     }
 
     @Override

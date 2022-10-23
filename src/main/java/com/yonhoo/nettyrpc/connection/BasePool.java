@@ -74,14 +74,23 @@ public class BasePool implements ChannelPool {
                 ChannelFuture f = this.connectChannel(bs);
                 if (f.isDone()) {
                     this.notifyConnect(f, promise);
+                    // new channel offer into dequeue
+                    if (promise.isSuccess()) {
+                        channelDequeue.offer(ch);
+                    }
                 } else {
                     f.addListener(new ChannelFutureListener() {
                         public void operationComplete(ChannelFuture future) throws Exception {
                             notifyConnect(future, promise);
+                            // new channel offer into dequeue
+                            if (promise.isSuccess()) {
+                                channelDequeue.offer(ch);
+                            }
                         }
                     });
                 }
             } else {
+                channelDequeue.offer(ch);
                 EventLoop loop = ch.eventLoop();
                 if (loop.inEventLoop()) {
                     doHealthCheck(ch, promise);
@@ -127,11 +136,7 @@ public class BasePool implements ChannelPool {
             if (f.isDone()) {
                 notifyHealthCheck(f, channel, promise);
             } else {
-                f.addListener(new FutureListener<Boolean>() {
-                    public void operationComplete(Future<Boolean> future) {
-                        notifyHealthCheck(future, channel, promise);
-                    }
-                });
+                f.addListener((FutureListener<Boolean>) future -> notifyHealthCheck(future, channel, promise));
             }
         } catch (Throwable var4) {
             this.closeAndFail(channel, var4, promise);
@@ -143,7 +148,7 @@ public class BasePool implements ChannelPool {
         try {
             assert channel.eventLoop().inEventLoop();
 
-            if (future.isSuccess() && (Boolean) future.getNow()) {
+            if (future.isSuccess() && future.getNow()) {
                 channel.attr(POOL_KEY).set(this);
                 this.handler.channelAcquired(channel);
                 promise.setSuccess(channel);
@@ -173,11 +178,7 @@ public class BasePool implements ChannelPool {
             if (loop.inEventLoop()) {
                 this.doReleaseChannel(channel, promise);
             } else {
-                loop.execute(new Runnable() {
-                    public void run() {
-                        BasePool.this.doReleaseChannel(channel, promise);
-                    }
-                });
+                loop.execute(() -> BasePool.this.doReleaseChannel(channel, promise));
             }
         } catch (Throwable var4) {
             this.closeAndFail(channel, var4, promise);
@@ -207,11 +208,7 @@ public class BasePool implements ChannelPool {
         if (f.isDone()) {
             this.releaseAndOfferIfHealthy(channel, promise, f);
         } else {
-            f.addListener(new FutureListener<Boolean>() {
-                public void operationComplete(Future<Boolean> future) throws Exception {
-                    BasePool.this.releaseAndOfferIfHealthy(channel, promise, f);
-                }
-            });
+            f.addListener((FutureListener<Boolean>) future -> BasePool.this.releaseAndOfferIfHealthy(channel, promise, f));
         }
 
     }

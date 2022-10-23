@@ -39,7 +39,7 @@ public class NettyClient {
     private final AtomicInteger streamId = new AtomicInteger();
     private final NettyRpcClientHandler nettyRpcClientHandler = new NettyRpcClientHandler();
 
-    public Channel connect(String host, int port) {
+    public NettyClient(String host, int port) {
         eventLoopGroup = new NioEventLoopGroup();
         bootstrap = new Bootstrap();
         bootstrap.group(eventLoopGroup)
@@ -61,11 +61,14 @@ public class NettyClient {
                         p.addLast(nettyRpcClientHandler);
                     }
                 });
+    }
+
+    public Channel connect() {
 
         this.channel = bootstrap.connect().awaitUninterruptibly()
                 .addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
-                        log.info("The netty client connected to ip [{}] , port [{}] successful!", host, port);
+                        log.info("The netty client connected to {} successful!", bootstrap.config().remoteAddress());
                     } else {
                         throw new IllegalStateException("netty client start error");
                     }

@@ -9,8 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ClientIdleStateTimeout {
     public static void main(String[] args) {
-        NettyClient nettyClient = new NettyClient();
-        Channel channel = nettyClient.connect("0.0.0.0", 13456);
+        NettyClient nettyClient = new NettyClient("0.0.0.0", 13456);
+        Channel channel = nettyClient.connect();
 
         try {
             Thread.sleep(40 * 1000);

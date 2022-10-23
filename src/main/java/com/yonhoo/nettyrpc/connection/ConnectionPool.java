@@ -21,31 +21,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ConnectionPool extends BasePool {
     private final EventExecutor executor;
     private final long acquireTimeoutNanos;
-    private final Runnable timeoutTask;
-    private final Queue<AcquireTask> pendingAcquireQueue;
-    private final int maxConnections;
-    private final int maxPendingAcquires;
     private final AtomicInteger acquiredChannelCount;
-    private int pendingAcquireCount;
     private boolean closed;
+    private final AcquireTimeoutAction action;
 
-    public ConnectionPool(Bootstrap bootstrap, ChannelPoolHandler handler, int maxConnections) {
-        this(bootstrap, handler, maxConnections, Integer.MAX_VALUE);
+    public ConnectionPool(Bootstrap bootstrap, int poolSize) {
+        this(bootstrap, null, poolSize, -1);
     }
 
-    public ConnectionPool(Bootstrap bootstrap, ChannelPoolHandler handler, int maxConnections, int maxPendingAcquires) {
-        this(bootstrap, handler, AcquireTimeoutAction.FAIL, -1L, maxConnections, maxPendingAcquires);
+    public ConnectionPool(Bootstrap bootstrap, int poolSize, long acquireTimeoutMillis) {
+        this(bootstrap, AcquireTimeoutAction.FAIL, poolSize, acquireTimeoutMillis);
     }
 
-    public ConnectionPool(Bootstrap bootstrap, ChannelPoolHandler handler, AcquireTimeoutAction action, long acquireTimeoutMillis,
-                          int maxConnections, int maxPendingAcquires) {
-        super(bootstrap, handler);
-        this.pendingAcquireQueue = new ArrayDeque();
+    public ConnectionPool(Bootstrap bootstrap, AcquireTimeoutAction action, int poolSize, long acquireTimeoutMillis) {
+        super(bootstrap, null);
         this.acquiredChannelCount = new AtomicInteger();
-        ObjectUtil.checkPositive(maxConnections, "maxConnections");
-        ObjectUtil.checkPositive(maxPendingAcquires, "maxPendingAcquires");
+        ObjectUtil.checkPositive(poolSize, "pool Size");
+        this.action = action;
         if (action == null && acquireTimeoutMillis == -1L) {
-            this.timeoutTask = null;
             this.acquireTimeoutNanos = -1L;
         } else {
             if (action == null && acquireTimeoutMillis != -1L) {
@@ -57,30 +50,9 @@ public class ConnectionPool extends BasePool {
             }
 
             this.acquireTimeoutNanos = TimeUnit.MILLISECONDS.toNanos(acquireTimeoutMillis);
-            switch (action) {
-                case FAIL:
-                    this.timeoutTask = new TimeoutTask() {
-                        public void onTimeout(AcquireTask task) {
-                            task.promise.setFailure(new AcquireTimeoutException());
-                        }
-                    };
-                    break;
-                case NEW:
-                    this.timeoutTask = new TimeoutTask() {
-                        public void onTimeout(AcquireTask task) {
-                            task.acquired();
-                            ConnectionPool.super.acquire(task.promise);
-                        }
-                    };
-                    break;
-                default:
-                    throw new Error();
-            }
         }
 
         this.executor = bootstrap.config().group().next();
-        this.maxConnections = maxConnections;
-        this.maxPendingAcquires = maxPendingAcquires;
     }
 
     public int acquiredChannelCount() {
@@ -114,107 +86,47 @@ public class ConnectionPool extends BasePool {
                 return;
             }
 
-            if (this.acquiredChannelCount.get() < this.maxConnections) {
-                assert this.acquiredChannelCount.get() >= 0;
-
-                Promise<Channel> p = this.executor.newPromise();
-                AcquireListener l = new AcquireListener(promise);
-                l.acquired();
-                p.addListener(l);
-                super.acquire(p);
-            } else {
-                if (this.pendingAcquireCount >= this.maxPendingAcquires) {
-                    this.tooManyOutstanding(promise);
-                } else {
-                    AcquireTask task = new AcquireTask(promise);
-                    if (this.pendingAcquireQueue.offer(task)) {
-                        ++this.pendingAcquireCount;
-                        if (this.timeoutTask != null) {
-                            task.timeoutFuture = this.executor.schedule(this.timeoutTask, this.acquireTimeoutNanos, TimeUnit.NANOSECONDS);
-                        }
-                    } else {
-                        this.tooManyOutstanding(promise);
-                    }
-                }
-
-                assert this.pendingAcquireCount > 0;
+            AcquireTask task = new AcquireTask(promise);
+            if (this.action != null) {
+                task.timeoutFuture = this.executor.schedule(new TimeoutTask(task, action),
+                        this.acquireTimeoutNanos, TimeUnit.NANOSECONDS);
             }
+
+            super.acquire(task.promise);
+
         } catch (Throwable var4) {
             promise.tryFailure(var4);
         }
 
     }
 
-    private void tooManyOutstanding(Promise<?> promise) {
-        promise.setFailure(new IllegalStateException("Too many outstanding acquire operations"));
-    }
-
-    public Future<Void> release(final Channel channel, final Promise<Void> promise) {
-        ObjectUtil.checkNotNull(promise, "promise");
-        Promise<Void> p = this.executor.newPromise();
-        super.release(channel, p.addListener(new FutureListener<Void>() {
-            public void operationComplete(Future<Void> future) {
-                try {
-                    assert ConnectionPool.this.executor.inEventLoop();
-
-                    if (ConnectionPool.this.closed) {
-                        channel.close();
-                        promise.setFailure(new IllegalStateException("ChannelPool was closed"));
-                        return;
-                    }
-
-                    if (future.isSuccess()) {
-                        ConnectionPool.this.decrementAndRunPendingAcquireTask();
-                        promise.setSuccess(null);
-                    } else {
-                        Throwable cause = future.cause();
-                        if (!(cause instanceof IllegalArgumentException)) {
-                            ConnectionPool.this.decrementAndRunPendingAcquireTask();
-                        }
-
-                        promise.setFailure(future.cause());
-                    }
-                } catch (Throwable var3) {
-                    promise.tryFailure(var3);
-                }
-
-            }
-        }));
-        return promise;
-    }
-
-    private void decrementAndRunPendingAcquireTask() {
-        int currentCount = this.acquiredChannelCount.decrementAndGet();
-
-        assert currentCount >= 0;
-
-        this.runPendingAcquireTask();
-    }
-
-    private void runPendingAcquireTask() {
-        while (true) {
-            if (this.acquiredChannelCount.get() < this.maxConnections) {
-                AcquireTask task = this.pendingAcquireQueue.poll();
-                if (task != null) {
-                    ScheduledFuture<?> timeoutFuture = task.timeoutFuture;
-                    if (timeoutFuture != null) {
-                        timeoutFuture.cancel(false);
-                    }
-
-                    --this.pendingAcquireCount;
-                    task.acquired();
-                    super.acquire(task.promise);
-                    continue;
-                }
-            }
-
-            assert this.pendingAcquireCount >= 0;
-
-            assert this.acquiredChannelCount.get() >= 0;
-
-            return;
-        }
-    }
+//    public Future<Void> release(final Channel channel, final Promise<Void> promise) {
+//        ObjectUtil.checkNotNull(promise, "promise");
+//        Promise<Void> p = this.executor.newPromise();
+//        super.release(channel, p.addListener(new FutureListener<Void>() {
+//            public void operationComplete(Future<Void> future) {
+//                try {
+//                    assert ConnectionPool.this.executor.inEventLoop();
+//
+//                    if (ConnectionPool.this.closed) {
+//                        channel.close();
+//                        promise.setFailure(new IllegalStateException("ChannelPool was closed"));
+//                        return;
+//                    }
+//
+//                    if (future.isSuccess()) {
+//                        promise.setSuccess(null);
+//                    } else {
+//                        promise.setFailure(future.cause());
+//                    }
+//                } catch (Throwable var3) {
+//                    promise.tryFailure(var3);
+//                }
+//
+//            }
+//        }));
+//        return promise;
+//    }
 
     public void close() {
         try {
@@ -254,27 +166,16 @@ public class ConnectionPool extends BasePool {
         if (!this.closed) {
             this.closed = true;
 
-            while (true) {
-                AcquireTask task = this.pendingAcquireQueue.poll();
-                if (task == null) {
-                    this.acquiredChannelCount.set(0);
-                    this.pendingAcquireCount = 0;
-                    //TODO Why?
-                    return GlobalEventExecutor.INSTANCE.submit(new Callable<Void>() {
-                        public Void call() throws Exception {
-                            ConnectionPool.super.close();
-                            return null;
-                        }
-                    });
-                }
+            this.acquiredChannelCount.set(0);
 
-                ScheduledFuture<?> f = task.timeoutFuture;
-                if (f != null) {
-                    f.cancel(false);
+            //TODO Why?
+            return GlobalEventExecutor.INSTANCE.submit(new Callable<Void>() {
+                public Void call() throws Exception {
+                    ConnectionPool.super.close();
+                    return null;
                 }
+            });
 
-                task.promise.setFailure(new ClosedChannelException());
-            }
         } else {
             return GlobalEventExecutor.INSTANCE.newSucceededFuture(null);
         }
@@ -292,7 +193,7 @@ public class ConnectionPool extends BasePool {
 
     private class AcquireListener implements FutureListener<Channel> {
         private final Promise<Channel> originalPromise;
-        protected boolean acquired;
+        private ScheduledFuture<?> timeoutFuture;
 
         AcquireListener(Promise<Channel> originalPromise) {
             this.originalPromise = originalPromise;
@@ -301,6 +202,10 @@ public class ConnectionPool extends BasePool {
         public void operationComplete(Future<Channel> future) {
             try {
                 assert ConnectionPool.this.executor.inEventLoop();
+
+                if (timeoutFuture != null) {
+                    timeoutFuture.cancel(false);
+                }
 
                 if (ConnectionPool.this.closed) {
                     if (future.isSuccess()) {
@@ -314,12 +219,6 @@ public class ConnectionPool extends BasePool {
                 if (future.isSuccess()) {
                     this.originalPromise.setSuccess(future.getNow());
                 } else {
-                    if (this.acquired) {
-                        ConnectionPool.this.decrementAndRunPendingAcquireTask();
-                    } else {
-                        ConnectionPool.this.runPendingAcquireTask();
-                    }
-
                     this.originalPromise.setFailure(future.cause());
                 }
             } catch (Throwable var3) {
@@ -327,37 +226,32 @@ public class ConnectionPool extends BasePool {
             }
 
         }
-
-        public void acquired() {
-            if (!this.acquired) {
-                ConnectionPool.this.acquiredChannelCount.incrementAndGet();
-                this.acquired = true;
-            }
-        }
     }
 
-    private abstract class TimeoutTask implements Runnable {
-        private TimeoutTask() {
+    private class TimeoutTask implements Runnable {
+        private final AcquireTask acquireTask;
+        private final AcquireTimeoutAction action;
+
+        private TimeoutTask(AcquireTask acquireTask, AcquireTimeoutAction action) {
+            this.acquireTask = acquireTask;
+            this.action = action;
         }
 
         public final void run() {
             assert executor.inEventLoop();
 
-            long nanoTime = System.nanoTime();
-
-            while (true) {
-                AcquireTask task = pendingAcquireQueue.peek();
-                if (task == null || nanoTime - task.expireNanoTime < 0L) {
-                    return;
-                }
-
-                pendingAcquireQueue.remove();
-                --pendingAcquireCount;
-                this.onTimeout(task);
+            switch (action) {
+                case FAIL:
+                    acquireTask.promise.setFailure(new AcquireTimeoutException());
+                    break;
+                case NEW:
+                    ConnectionPool.super.acquire(acquireTask.promise);
+                    break;
+                default:
+                    throw new Error();
             }
-        }
 
-        public abstract void onTimeout(AcquireTask var1);
+        }
     }
 
     private final class AcquireTask extends AcquireListener {
