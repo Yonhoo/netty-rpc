@@ -65,7 +65,8 @@ public class NettyClient {
 
     public Channel connect() {
 
-        this.channel = bootstrap.connect().awaitUninterruptibly()
+        this.channel = bootstrap.connect()
+                .awaitUninterruptibly()
                 .addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         log.info("The netty client connected to {} successful!", bootstrap.config().remoteAddress());
