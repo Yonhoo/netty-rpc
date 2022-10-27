@@ -1,6 +1,6 @@
 package com.yonhoo.nettyrpc.connection;
 
-import io.netty.bootstrap.Bootstrap;
+import com.yonhoo.nettyrpc.protocol.RpcResponse;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Connection {
     private Channel channel;
-    private final ConcurrentHashMap<Integer, Promise> invokePromiseMap =
+    private final ConcurrentHashMap<Integer, Promise<RpcResponse>> invokePromiseMap =
             new ConcurrentHashMap<>();
     private AtomicInteger referenceCount = new AtomicInteger();
     private AtomicBoolean closed = new AtomicBoolean(false);
@@ -32,16 +32,16 @@ public class Connection {
         return this.channel != null && this.channel.isActive();
     }
 
-    public Promise addInvokeFuture(Integer invokeId, Promise future) {
-        Promise origin = this.invokePromiseMap.putIfAbsent(invokeId, future);
+    public Promise<RpcResponse> addInvokeFuture(Integer invokeId, Promise<RpcResponse> future) {
+        Promise<RpcResponse> origin = this.invokePromiseMap.putIfAbsent(invokeId, future);
         if (origin == null) {
             this.referenceCount.incrementAndGet();
         }
         return origin;
     }
 
-    public Promise removeInvokeFuture(Integer invokeId) {
-        Promise result = this.invokePromiseMap.remove(invokeId);
+    public Promise<RpcResponse> removeInvokeFuture(Integer invokeId) {
+        Promise<RpcResponse> result = this.invokePromiseMap.remove(invokeId);
         if (result != null) {
             this.referenceCount.decrementAndGet();
         }
@@ -72,11 +72,11 @@ public class Connection {
     }
 
     private void onClose() {
-        Iterator<Map.Entry<Integer, Promise>> iter = invokePromiseMap.entrySet().iterator();
+        Iterator<Map.Entry<Integer, Promise<RpcResponse>>> iter = invokePromiseMap.entrySet().iterator();
         while (iter.hasNext()) {
-            Map.Entry<Integer, Promise> entry = iter.next();
+            Map.Entry<Integer, Promise<RpcResponse>> entry = iter.next();
             iter.remove();
-            Promise future = entry.getValue();
+            Promise<RpcResponse> future = entry.getValue();
             if (future != null) {
                 future.setFailure(new Throwable("connection closed"));
             }
