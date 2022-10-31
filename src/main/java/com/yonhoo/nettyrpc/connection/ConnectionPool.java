@@ -34,7 +34,7 @@ public class ConnectionPool extends BasePool {
     }
 
     public ConnectionPool(Bootstrap bootstrap, AcquireTimeoutAction action, int poolSize, long acquireTimeoutMillis) {
-        super(bootstrap, null);
+        super(bootstrap, null, poolSize);
         this.acquiredChannelCount = new AtomicInteger();
         ObjectUtil.checkPositive(poolSize, "pool Size");
         this.action = action;
@@ -55,11 +55,23 @@ public class ConnectionPool extends BasePool {
         this.executor = bootstrap.config().group().next();
     }
 
+    public void init() {
+        if (this.executor.inEventLoop()) {
+            super.init();
+        } else {
+            this.executor.execute(new Runnable() {
+                public void run() {
+                    ConnectionPool.super.init();
+                }
+            });
+        }
+    }
+
     public int acquiredChannelCount() {
         return this.acquiredChannelCount.get();
     }
 
-    public Future<Channel> acquire(final Promise<Channel> promise) {
+    public Future<Connection> acquire(final Promise<Connection> promise) {
         try {
             if (this.executor.inEventLoop()) {
                 this.acquire0(promise);
@@ -77,7 +89,7 @@ public class ConnectionPool extends BasePool {
         return promise;
     }
 
-    private void acquire0(Promise<Channel> promise) {
+    private void acquire0(Promise<Connection> promise) {
         try {
             assert this.executor.inEventLoop();
 
@@ -168,7 +180,6 @@ public class ConnectionPool extends BasePool {
 
             this.acquiredChannelCount.set(0);
 
-            //TODO Why?
             return GlobalEventExecutor.INSTANCE.submit(new Callable<Void>() {
                 public Void call() throws Exception {
                     ConnectionPool.super.close();
@@ -191,15 +202,15 @@ public class ConnectionPool extends BasePool {
         }
     }
 
-    private class AcquireListener implements FutureListener<Channel> {
-        private final Promise<Channel> originalPromise;
+    private class AcquireListener implements FutureListener<Connection> {
+        private final Promise<Connection> originalPromise;
         private ScheduledFuture<?> timeoutFuture;
 
-        AcquireListener(Promise<Channel> originalPromise) {
+        AcquireListener(Promise<Connection> originalPromise) {
             this.originalPromise = originalPromise;
         }
 
-        public void operationComplete(Future<Channel> future) {
+        public void operationComplete(Future<Connection> future) {
             try {
                 assert ConnectionPool.this.executor.inEventLoop();
 
@@ -255,11 +266,11 @@ public class ConnectionPool extends BasePool {
     }
 
     private final class AcquireTask extends AcquireListener {
-        final Promise<Channel> promise;
+        final Promise<Connection> promise;
         final long expireNanoTime;
         ScheduledFuture<?> timeoutFuture;
 
-        AcquireTask(Promise<Channel> promise) {
+        AcquireTask(Promise<Connection> promise) {
             super(promise);
             this.expireNanoTime = System.nanoTime() + ConnectionPool.this.acquireTimeoutNanos;
             this.promise = ConnectionPool.this.executor.newPromise().addListener((FutureListener) this);
