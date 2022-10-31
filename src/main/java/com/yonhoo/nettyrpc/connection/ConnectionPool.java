@@ -71,7 +71,8 @@ public class ConnectionPool extends BasePool {
         return this.acquiredChannelCount.get();
     }
 
-    public Future<Connection> acquire(final Promise<Connection> promise) {
+    public Future<Connection> acquireConnection() {
+        Promise<Connection> promise = this.executor.newPromise();
         try {
             if (this.executor.inEventLoop()) {
                 this.acquire0(promise);

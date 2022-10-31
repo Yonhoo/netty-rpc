@@ -122,10 +122,6 @@ public class BasePool {
         }
     }
 
-    protected ChannelFuture connectChannel(Bootstrap bs) {
-        return bs.connect();
-    }
-
     public final Future<Void> release(Connection connection) {
         return this.release(connection, connection.getChannel().eventLoop().newPromise());
     }
@@ -190,11 +186,11 @@ public class BasePool {
         promise.tryFailure(cause);
     }
 
-    protected Connection pollConnection() {
+    private Connection pollConnection() {
         return this.connectionDequeue.pollFirst();
     }
 
-    protected boolean offerChannel(Connection channel) {
+    private boolean offerChannel(Connection channel) {
         return this.connectionDequeue.offer(channel);
     }
 
