@@ -5,6 +5,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.util.AttributeKey;
+import io.netty.util.internal.ObjectUtil;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -24,12 +25,24 @@ public class Connection {
     public static final AttributeKey<Connection> CONNECTION = AttributeKey.valueOf("connection");
 
     public Connection(Channel channel) {
-        this.channel = channel;
+        this.channel = ObjectUtil.checkNotNull(channel, "channel not be null");
         this.channel.attr(CONNECTION).set(this);
+    }
+
+    public Channel getChannel() {
+        return channel;
     }
 
     public boolean isFine() {
         return this.channel != null && this.channel.isActive();
+    }
+
+    public Boolean inEventLoop() {
+        return channel.eventLoop().inEventLoop();
+    }
+
+    public void inEventLoopExecute(Runnable runnable) {
+        channel.eventLoop().execute(runnable);
     }
 
     public CompletableFuture<RpcResponse> addInvokeFuture(Integer invokeId, CompletableFuture<RpcResponse> future) {
