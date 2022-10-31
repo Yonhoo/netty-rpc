@@ -36,7 +36,6 @@ import lombok.extern.slf4j.Slf4j;
 public class NettyClient {
     private Bootstrap bootstrap;
     private EventLoopGroup eventLoopGroup;
-    private Channel channel;
     private ConcurrentHashMap<Class<?>, RpcClientProxy> serviceProxyMap;
     private final AtomicInteger streamId = new AtomicInteger();
     private final NettyRpcClientHandler nettyRpcClientHandler = new NettyRpcClientHandler();
@@ -72,27 +71,27 @@ public class NettyClient {
                 });
     }
 
-    public Channel connect() {
-
-        this.channel = bootstrap.connect()
-                .awaitUninterruptibly()
-                .addListener((ChannelFutureListener) future -> {
-                    if (future.isSuccess()) {
-                        log.info("The netty client connected to {} successful!", bootstrap.config().remoteAddress());
-                    } else {
-                        throw new IllegalStateException("netty client start error");
-                    }
-                }).channel();
-        return channel;
-    }
+//    public Channel connect() {
+//
+//        this.channel = bootstrap.connect()
+//                .awaitUninterruptibly()
+//                .addListener((ChannelFutureListener) future -> {
+//                    if (future.isSuccess()) {
+//                        log.info("The netty client connected to {} successful!", bootstrap.config().remoteAddress());
+//                    } else {
+//                        throw new IllegalStateException("netty client start error");
+//                    }
+//                }).channel();
+//        return channel;
+//    }
 
     public <T> T registerService(Class<T> classType) {
         return null;
     }
 
     public Object syncInvoke(RpcRequest request) {
-        //Connection connection =
-        if (this.isAvailable()) {
+        Connection connection = clientConnectionManager.getConnection();
+        if (connection.isFine()) {
             try {
                 RpcMessage rpcMessage = RpcMessage.builder()
                         .messageType(RpcConstants.REQUEST_TYPE)
@@ -103,10 +102,10 @@ public class NettyClient {
                         .build();
 
                 CompletableFuture<RpcResponse> responseFuture = new CompletableFuture<>();
-                //channel.attr(Connection.CONNECTION,)
-                nettyRpcClientHandler.setStreamResponsePromise(rpcMessage.getRequestId(), responseFuture);
+                connection.addInvokeFuture(rpcMessage.getRequestId(), responseFuture);
+                //nettyRpcClientHandler.setStreamResponsePromise(rpcMessage.getRequestId(), responseFuture);
                 //TODO add future listener handle
-                this.channel.writeAndFlush(rpcMessage);
+                connection.getChannel().writeAndFlush(rpcMessage);
                 return getResponse(responseFuture.get());
             } catch (InterruptedException | ExecutionException e) {
                 if (e instanceof InterruptedException) {
@@ -134,9 +133,5 @@ public class NettyClient {
 
     public void close() {
         eventLoopGroup.shutdownGracefully().awaitUninterruptibly();
-    }
-
-    private boolean isAvailable() {
-        return this.channel.isOpen() && this.channel.isActive();
     }
 }
