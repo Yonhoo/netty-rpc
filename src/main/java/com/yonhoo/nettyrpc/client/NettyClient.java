@@ -2,6 +2,9 @@ package com.yonhoo.nettyrpc.client;
 
 import com.yonhoo.nettyrpc.common.CompressTypeEnum;
 import com.yonhoo.nettyrpc.common.RpcConstants;
+import com.yonhoo.nettyrpc.connection.ClientConnectionManager;
+import com.yonhoo.nettyrpc.connection.Connection;
+import com.yonhoo.nettyrpc.connection.DefaultClientConnectionManager;
 import com.yonhoo.nettyrpc.exception.RpcErrorCode;
 import com.yonhoo.nettyrpc.exception.RpcException;
 import com.yonhoo.nettyrpc.protocol.RpcMessage;
@@ -37,10 +40,17 @@ public class NettyClient {
     private ConcurrentHashMap<Class<?>, RpcClientProxy> serviceProxyMap;
     private final AtomicInteger streamId = new AtomicInteger();
     private final NettyRpcClientHandler nettyRpcClientHandler = new NettyRpcClientHandler();
+    private final ClientConnectionManager clientConnectionManager;
+    private static int DEFAULT_POOL_SIZE = 5;
 
     public NettyClient(String host, int port) {
         eventLoopGroup = new NioEventLoopGroup();
         bootstrap = new Bootstrap();
+
+        clientConnectionManager = new DefaultClientConnectionManager(bootstrap, DEFAULT_POOL_SIZE);
+
+        clientConnectionManager.startUp();
+
         bootstrap.group(eventLoopGroup)
                 .channel(NioSocketChannel.class)
                 .handler(new LoggingHandler(LogLevel.INFO))
@@ -81,6 +91,7 @@ public class NettyClient {
     }
 
     public Object syncInvoke(RpcRequest request) {
+        //Connection connection =
         if (this.isAvailable()) {
             try {
                 RpcMessage rpcMessage = RpcMessage.builder()
@@ -92,6 +103,7 @@ public class NettyClient {
                         .build();
 
                 CompletableFuture<RpcResponse> responseFuture = new CompletableFuture<>();
+                //channel.attr(Connection.CONNECTION,)
                 nettyRpcClientHandler.setStreamResponsePromise(rpcMessage.getRequestId(), responseFuture);
                 //TODO add future listener handle
                 this.channel.writeAndFlush(rpcMessage);

@@ -6,7 +6,7 @@ import io.netty.util.concurrent.Future;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class DefaultClientConnectionManager {
+public class DefaultClientConnectionManager implements ClientConnectionManager {
     private ConnectionPool connectionPool;
     private final Bootstrap bootstrap;
     private final int connectionPoolSize;

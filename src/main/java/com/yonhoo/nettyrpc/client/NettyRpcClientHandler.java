@@ -45,6 +45,7 @@ public class NettyRpcClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object event) throws Exception {
+        //TODO add connect/disconnect event handler
         if (event instanceof IdleStateEvent) {
             IdleState state = ((IdleStateEvent) event).state();
             if (state == IdleState.ALL_IDLE) {
@@ -58,7 +59,7 @@ public class NettyRpcClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        log.error("channel closed");
+        log.warn("channel closed");
         streamIdPromiseMap.forEach((streamId, responsePromise) -> {
             if (!responsePromise.isDone()) {
                 responsePromise.complete(RpcResponse.fail(-1, "channel close"));
