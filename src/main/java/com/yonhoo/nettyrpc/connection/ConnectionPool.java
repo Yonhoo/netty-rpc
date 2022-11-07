@@ -2,6 +2,7 @@ package com.yonhoo.nettyrpc.connection;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.pool.AbstractChannelPoolHandler;
 import io.netty.channel.pool.ChannelPoolHandler;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
@@ -17,7 +18,9 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ConnectionPool extends BasePool {
     private final EventExecutor executor;
     private final long acquireTimeoutNanos;
@@ -34,7 +37,7 @@ public class ConnectionPool extends BasePool {
     }
 
     public ConnectionPool(Bootstrap bootstrap, AcquireTimeoutAction action, int poolSize, long acquireTimeoutMillis) {
-        super(bootstrap, null, poolSize);
+        super(bootstrap, new ClientChannelPoolHandler(), poolSize);
         this.acquiredChannelCount = new AtomicInteger();
         ObjectUtil.checkPositive(poolSize, "pool Size");
         this.action = action;

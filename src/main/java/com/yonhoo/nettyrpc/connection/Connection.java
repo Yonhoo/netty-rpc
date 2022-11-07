@@ -34,7 +34,7 @@ public class Connection {
     }
 
     public boolean isFine() {
-        return this.channel != null && this.channel.isActive();
+        return this.channel != null && this.channel.isActive() && this.channel.isWritable();
     }
 
     public Boolean inEventLoop() {

@@ -5,6 +5,7 @@ import com.yonhoo.nettyrpc.connection.Connection;
 import com.yonhoo.nettyrpc.protocol.RpcMessage;
 import com.yonhoo.nettyrpc.protocol.RpcResponse;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleState;
@@ -14,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@ChannelHandler.Sharable
 public class NettyRpcClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override

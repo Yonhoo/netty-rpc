@@ -3,14 +3,10 @@ package com.yonhoo.nettyrpc.example;
 import com.yonhoo.nettyrpc.client.NettyClient;
 import com.yonhoo.nettyrpc.helloworld.HelloWorld;
 import com.yonhoo.nettyrpc.protocol.RpcRequest;
-import io.netty.channel.Channel;
 
 public class ClientInvokeSayHi {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         NettyClient nettyClient = new NettyClient("0.0.0.0", 13456);
-        Channel channel = nettyClient.connect();
-
-        if (channel.isActive()) {
 
             RpcRequest request = RpcRequest.builder()
                     .methodName("sayHello")
@@ -21,8 +17,7 @@ public class ClientInvokeSayHi {
 
             String response = (String) nettyClient.syncInvoke(request);
             System.out.println(response);
-        }
-
+        Thread.sleep(10000);
         nettyClient.close();
     }
 }

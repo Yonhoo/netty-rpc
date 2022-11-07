@@ -3,11 +3,8 @@ package com.yonhoo.nettyrpc.connection;
 import com.yonhoo.nettyrpc.exception.RpcException;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.pool.ChannelHealthChecker;
 import io.netty.channel.pool.ChannelPoolHandler;
-import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
@@ -39,13 +36,6 @@ public class BasePool {
         this.connectionDequeue = new ArrayDeque<>();
         this.handler = ObjectUtil.checkNotNull(handler, "handler");
         this.healthCheck = ObjectUtil.checkNotNull(healthCheck, "healthCheck");
-        this.bootstrap.handler(new ChannelInitializer<Channel>() {
-            protected void initChannel(Channel ch) throws Exception {
-                assert ch.eventLoop().inEventLoop();
-
-                handler.channelCreated(ch);
-            }
-        });
     }
 
     public void init() {
@@ -67,6 +57,7 @@ public class BasePool {
         try {
             final Connection connection = this.pollConnection();
             if (connection == null && connectionDequeue.size() < poolSize) {
+                log.info("create new connection when acquire empty connection from poll");
                 Connection newConnection = connectionFactory.createConnection();
                 if (newConnection.isFine()) {
                     this.notifyConnect(newConnection, promise);

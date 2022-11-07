@@ -1,6 +1,7 @@
 package com.yonhoo.nettyrpc.protocol;
 
 import com.yonhoo.nettyrpc.common.RpcConstants;
+import java.io.Serializable;
 import lombok.Builder;
 import lombok.Value;
 
@@ -27,7 +28,7 @@ import lombok.Value;
 
 @Value
 @Builder
-public class RpcMessage {
+public class RpcMessage implements Serializable {
     /**
      * rpc message type
      */

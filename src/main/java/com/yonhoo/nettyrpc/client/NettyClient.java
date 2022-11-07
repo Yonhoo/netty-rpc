@@ -18,6 +18,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -25,6 +26,8 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -46,10 +49,6 @@ public class NettyClient {
         eventLoopGroup = new NioEventLoopGroup();
         bootstrap = new Bootstrap();
 
-        clientConnectionManager = new DefaultClientConnectionManager(bootstrap, DEFAULT_POOL_SIZE);
-
-        clientConnectionManager.startUp();
-
         bootstrap.group(eventLoopGroup)
                 .channel(NioSocketChannel.class)
                 .handler(new LoggingHandler(LogLevel.INFO))
@@ -69,6 +68,10 @@ public class NettyClient {
                         p.addLast(nettyRpcClientHandler);
                     }
                 });
+
+        clientConnectionManager = new DefaultClientConnectionManager(bootstrap, DEFAULT_POOL_SIZE);
+
+        clientConnectionManager.startUp();
     }
 
 //    public Channel connect() {
@@ -105,7 +108,17 @@ public class NettyClient {
                 connection.addInvokeFuture(rpcMessage.getRequestId(), responseFuture);
                 //nettyRpcClientHandler.setStreamResponsePromise(rpcMessage.getRequestId(), responseFuture);
                 //TODO add future listener handle
-                connection.getChannel().writeAndFlush(rpcMessage);
+                connection.getChannel().writeAndFlush(rpcMessage)
+                        .addListener(new FutureListener<Void>() {
+                            public void operationComplete(Future<Void> f) throws Exception {
+                                if (f.isSuccess()) {
+                                    log.info("channel write message success");
+                                } else {
+                                    log.error("write message error:", f.cause());
+                                }
+
+                            }
+                        });
                 return getResponse(responseFuture.get());
             } catch (InterruptedException | ExecutionException e) {
                 if (e instanceof InterruptedException) {
