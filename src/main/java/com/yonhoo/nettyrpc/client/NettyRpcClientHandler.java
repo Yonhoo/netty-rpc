@@ -60,6 +60,8 @@ public class NettyRpcClientHandler extends ChannelInboundHandlerAdapter {
         Channel channel = ctx.channel();
         Attribute<Connection> bindConnection = channel.attr(Connection.CONNECTION);
         Connection connection = bindConnection.get();
-        connection.close();
+        if (connection != null) {
+            connection.close();
+        }
     }
 }

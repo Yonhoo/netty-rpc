@@ -66,7 +66,6 @@ public class RpcMessageEncoder extends MessageToByteEncoder<RpcMessage> {
         }
 
         Serializer serializer = new ProtostuffSerializer();
-        log.info("default serialize is protobuffer");
         byte[] bodyBytes = serializer.serialize(data);
         fullLength += bodyBytes.length;
 

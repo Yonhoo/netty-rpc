@@ -3,15 +3,20 @@ package com.yonhoo.nettyrpc.protocol;
 import com.yonhoo.nettyrpc.common.RpcConstants;
 import com.yonhoo.nettyrpc.serialize.ProtostuffSerializer;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledHeapByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class RpcMessageDecoder extends LengthFieldBasedFrameDecoder {
     public RpcMessageDecoder() {
-        this(RpcConstants.MAX_FRAME_LENGTH, 0, 4, 0, 0);
+        this(Integer.MAX_VALUE, 0, 4, -4, 0);
     }
 
     /**
@@ -30,13 +35,17 @@ public class RpcMessageDecoder extends LengthFieldBasedFrameDecoder {
     }
 
     @Override
-    protected Object decode(ChannelHandlerContext ctx, ByteBuf in) {
-
-        if (in.readableBytes() >= RpcConstants.TOTAL_LENGTH) {
-            return decodeFrame(in);
-        } else {
-            throw new RuntimeException("read in data total length less than 16 bytes");
+    protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
+        Object decoded = super.decode(ctx, in);
+        if (decoded instanceof ByteBuf) {
+            ByteBuf frame = (ByteBuf) decoded;
+            if (frame.readableBytes() >= RpcConstants.TOTAL_LENGTH) {
+                return decodeFrame(frame);
+            } else {
+                throw new RuntimeException("read in data total length less than 16 bytes");
+            }
         }
+        return decoded;
     }
 
     private Object decodeFrame(ByteBuf in) {

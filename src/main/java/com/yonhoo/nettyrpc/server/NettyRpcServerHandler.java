@@ -26,8 +26,6 @@ public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         RpcMessage requestRpcMessage = ((RpcMessage) msg);
         try {
-            log.info("server receive msg: [{}] ", msg);
-
             checkMessageValid((RpcMessage) msg);
 
             RpcRequest rpcRequestData = (RpcRequest) requestRpcMessage.getData();
@@ -106,6 +104,5 @@ public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         log.error("server catch exception", cause);
         cause.printStackTrace();
-        ctx.close();
     }
 }
