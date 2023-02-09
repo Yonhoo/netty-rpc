@@ -88,6 +88,8 @@ public class ZookeeperRegistry extends Registry {
         } catch (Exception e) {
             log.error("registry config error", e);
         }
+
+        providerConfig.setRegistered(true);
     }
 
     private CuratorFramework getAndCheckZkClient() {
@@ -99,7 +101,33 @@ public class ZookeeperRegistry extends Registry {
 
     @Override
     public boolean unRegistry(ProviderConfig providerConfig) {
-        return false;
+        if (!providerConfig.isRegistered()) {
+            log.warn("provider config was not registered");
+            return false;
+        }
+        try {
+
+            String providerPath = ZookeeperRegistryHelper.buildProviderPath(registryConfig.getRootPath(),
+                    providerConfig);
+
+            for (ServiceConfig serviceConfig : providerConfig.getServiceConfigList()) {
+
+                String servicePath = providerPath + CONTEXT_SEP + serviceConfig.getUrl();
+
+                getAndCheckZkClient()
+                        .delete()
+                        .forPath(servicePath);
+
+            }
+        } catch (Exception e) {
+            log.error("registry config error", e);
+        }
+
+        providerConfig.setRegistered(false);
+
+        //TODO remove configObserver cache
+
+        return true;
     }
 
     @Override
