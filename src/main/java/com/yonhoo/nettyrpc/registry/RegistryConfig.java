@@ -8,5 +8,7 @@ import lombok.Data;
 @Data
 public class RegistryConfig {
     private String address;
-    private String protocol;
+    private int port;
+    private String rootPath;
+    private int connectTimeout;
 }

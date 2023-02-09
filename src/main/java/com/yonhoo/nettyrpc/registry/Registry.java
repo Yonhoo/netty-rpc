@@ -11,7 +11,7 @@ public abstract class Registry {
 
     public abstract boolean start();
 
-    public abstract boolean registry(ProviderConfig providerConfig);
+    public abstract void registry(ProviderConfig providerConfig);
 
     public abstract boolean unRegistry(ProviderConfig providerConfig);
 
