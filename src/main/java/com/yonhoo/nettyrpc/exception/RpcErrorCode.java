@@ -8,7 +8,9 @@ public enum RpcErrorCode {
     RPC_INVOKE_METHOD_ERROR("10005", "invoke method error"),
     RPC_CHANNEL_IS_NOT_ACTIVE("10006", "connect channel is not active"),
     RPC_MESSAGE_TYPE_NOT_BE_EMPTY("10007", "rpc message type not be empty"),
-    RPC_REGISTRY_CLIENT_START_EXCEPTION("10008", "rpc client start exception");
+    REGISTRY_CLIENT_START_EXCEPTION("10008", "rpc client start exception"),
+    REGISTRY_CLIENT_UNAVAILABLE("10009", "rpc registry client unavailable"),
+    REGISTRY_UNSUBSCRIBE_EXCEPTION("10010", "rpc registry client unsubscribe exception");
 
     private final String code;
     private final String message;

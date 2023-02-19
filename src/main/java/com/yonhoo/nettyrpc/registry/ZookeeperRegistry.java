@@ -6,9 +6,7 @@ import com.yonhoo.nettyrpc.exception.RpcErrorCode;
 import com.yonhoo.nettyrpc.exception.RpcException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,8 +19,6 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.CuratorCache;
-import org.apache.curator.framework.recipes.cache.CuratorCacheListener;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.CreateMode;
 import org.springframework.stereotype.Component;
@@ -69,7 +65,7 @@ public class ZookeeperRegistry implements Registry {
         zkClient.start();
 
         if (CuratorFrameworkState.STARTED != zkClient.getState()) {
-            throw RpcException.with(RpcErrorCode.RPC_REGISTRY_CLIENT_START_EXCEPTION);
+            throw RpcException.with(RpcErrorCode.REGISTRY_CLIENT_START_EXCEPTION);
         }
     }
 
@@ -106,7 +102,7 @@ public class ZookeeperRegistry implements Registry {
 
     private CuratorFramework getAndCheckZkClient() {
         if (zkClient == null || zkClient.getState() != CuratorFrameworkState.STARTED) {
-            throw new RuntimeException("registry client not available");
+            throw RpcException.with(RpcErrorCode.REGISTRY_CLIENT_UNAVAILABLE);
         }
         return zkClient;
     }
@@ -195,12 +191,25 @@ public class ZookeeperRegistry implements Registry {
 
     @Override
     public void unSubscribe(ConsumerConfig config) {
-
+        providerObserver.removeProviderListener(config);
+        CuratorCache childCache = INTERFACE_PROVIDER_CACHE.remove(config);
+        if (childCache != null) {
+            try {
+                childCache.close();
+            } catch (Exception e) {
+                log.error("unsubscribe consumer config : {}", e);
+                throw RpcException.with(RpcErrorCode.REGISTRY_UNSUBSCRIBE_EXCEPTION);
+            }
+        }
 
     }
 
     @Override
     public void destroy() {
+        INTERFACE_PROVIDER_CACHE.forEach((consumerConfig, curatorCache) -> curatorCache.close());
 
+        if (zkClient != null && zkClient.getState() == CuratorFrameworkState.STARTED) {
+            zkClient.close();
+        }
     }
 }
