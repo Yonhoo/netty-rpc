@@ -2,22 +2,15 @@ package com.yonhoo.nettyrpc.registry;
 
 import java.util.List;
 
-public abstract class Registry {
-    protected RegistryConfig registryConfig;
+public interface Registry {
 
-    protected Registry(RegistryConfig registryConfig) {
-        this.registryConfig = registryConfig;
-    }
+    void registry(ProviderConfig providerConfig);
 
-    public abstract boolean start();
+    boolean unRegistry(ProviderConfig providerConfig);
 
-    public abstract void registry(ProviderConfig providerConfig);
+    List<ProviderInfo> subscribe(ConsumerConfig config);
 
-    public abstract boolean unRegistry(ProviderConfig providerConfig);
+    void unSubscribe(ConsumerConfig config);
 
-    public abstract List<ProviderInfo> subscribe(ConsumerConfig config);
-
-    public abstract void unSubscribe(ConsumerConfig config);
-
-    public abstract void destroy();
+    void destroy();
 }

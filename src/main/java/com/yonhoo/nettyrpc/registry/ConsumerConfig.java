@@ -1,11 +1,20 @@
 package com.yonhoo.nettyrpc.registry;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 public class ConsumerConfig {
-    private String consumerName;
+    private String consumerInterface;
     private String timeout;
     private String invokeType;
-    private String protocol;
+    private ConsumerBootStrap consumerBootStrap;
+
+    public ConsumerConfig(String consumerInterface, String timeout, String invokeType) {
+        this.consumerInterface = consumerInterface;
+        this.timeout = timeout;
+        this.invokeType = invokeType;
+    }
+
 }

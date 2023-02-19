@@ -32,4 +32,7 @@ public class RpcConstants {
     public static final String PING = "ping";
     public static final String PONG = "pong";
     public static final int MAX_FRAME_LENGTH = 8 * 1024 * 1024;
+
+    public static final String PROVIDER_NAME = "PROVIDER_NAME";
+    public static final String SERVICE_WEIGHT = "SERVICE_WEIGHT";
 }

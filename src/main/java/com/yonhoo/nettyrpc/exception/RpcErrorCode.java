@@ -7,7 +7,8 @@ public enum RpcErrorCode {
     SERVICE_NOT_REGISTERED("10004", "this service not registered"),
     RPC_INVOKE_METHOD_ERROR("10005", "invoke method error"),
     RPC_CHANNEL_IS_NOT_ACTIVE("10006", "connect channel is not active"),
-    RPC_MESSAGE_TYPE_NOT_BE_EMPTY("10007", "rpc message type not be empty");
+    RPC_MESSAGE_TYPE_NOT_BE_EMPTY("10007", "rpc message type not be empty"),
+    RPC_REGISTRY_CLIENT_START_EXCEPTION("10008", "rpc client start exception");
 
     private final String code;
     private final String message;
