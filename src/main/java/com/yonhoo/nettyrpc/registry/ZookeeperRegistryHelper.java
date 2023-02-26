@@ -1,7 +1,6 @@
 package com.yonhoo.nettyrpc.registry;
 
 import com.yonhoo.nettyrpc.common.RpcConstants;
-import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +12,7 @@ import org.apache.logging.log4j.util.Strings;
 public class ZookeeperRegistryHelper {
 
     public static String buildProviderPath(String rootPath, String providerPath) {
-        return rootPath + "netty-rpc/" + providerPath + "/providers";
+        return "/" + rootPath + "netty-rpc/" + providerPath + "/providers";
     }
 
     public static String convertMetaData(ProviderConfig providerConfig,

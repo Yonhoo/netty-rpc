@@ -12,4 +12,5 @@ import org.springframework.stereotype.Component;
 public class RegistryPropertiesConfig {
     private String address;
     private Integer port;
+    private String application;
 }

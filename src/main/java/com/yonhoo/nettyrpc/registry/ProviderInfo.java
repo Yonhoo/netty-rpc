@@ -7,7 +7,13 @@ import lombok.Data;
 @Builder
 public class ProviderInfo {
     private String address;
-    private int port;
+    private Integer port;
     private String providerName;
-    private int weight;
+    private Double weight;
+    private String rootPath;
+    private String servicePath;
+
+    public boolean isProviderPath() {
+        return rootPath.equals(servicePath);
+    }
 }

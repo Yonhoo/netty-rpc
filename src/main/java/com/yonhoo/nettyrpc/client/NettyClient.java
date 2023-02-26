@@ -46,6 +46,7 @@ public class NettyClient {
     private static int DEFAULT_POOL_SIZE = 5;
 
     public NettyClient(String host, int port) {
+        // netty bootstrap should be wrap in class
         eventLoopGroup = new NioEventLoopGroup();
         bootstrap = new Bootstrap();
 

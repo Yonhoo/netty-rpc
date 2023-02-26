@@ -8,7 +8,7 @@ public interface Registry {
 
     boolean unRegistry(ProviderConfig providerConfig);
 
-    List<ProviderInfo> subscribe(ConsumerConfig config);
+    void subscribe(ConsumerConfig config);
 
     void unSubscribe(ConsumerConfig config);
 

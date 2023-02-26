@@ -1,11 +1,9 @@
 package com.yonhoo.nettyrpc.registry;
 
-import java.util.List;
-
 public interface ProviderInfoListener {
-    void addProviders(List<ProviderInfo> providerList);
+    void addProvider(ProviderInfo providerInfo);
 
-    void removeProviders(List<ProviderInfo> providerList);
+    void removeProvider(ProviderInfo providerInfo);
 
-    void updateProviders(List<ProviderInfo> providerList);
+    void updateProvider(ProviderInfo providerInfo);
 }
