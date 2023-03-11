@@ -1,11 +1,19 @@
 package com.yonhoo.nettyrpc.client;
 
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 
-public class RpcClientProxy implements InvocationHandler {
-    @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        return null;
+public class RpcClientProxy {
+    private final InvokerBroker invokerBroker;
+
+    public RpcClientProxy(InvokerBroker invokerBroker) {
+        this.invokerBroker = invokerBroker;
+    }
+
+    public <T> T getProxy() throws ClassNotFoundException {
+        Class<T> interfaceClass = (Class<T>) Class.forName(invokerBroker.getConsumerConfig().getConsumerInterface());
+        InvocationHandler handler = new ProxyInvoker(interfaceClass, invokerBroker);
+        ClassLoader classLoader = this.getClass().getClassLoader();
+        return (T) java.lang.reflect.Proxy.newProxyInstance(classLoader,
+                new Class[] {interfaceClass}, handler);
     }
 }
