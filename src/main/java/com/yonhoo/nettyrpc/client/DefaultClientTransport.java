@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class ClientTransport {
+public class DefaultClientTransport {
     private static final NettyClient nettyClient = new NettyClient();
     // default singleton
     private static final DefaultClientConnectionManager connectionManager = new DefaultClientConnectionManager(nettyClient);
