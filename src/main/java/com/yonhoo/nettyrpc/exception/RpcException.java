@@ -5,6 +5,7 @@ public class RpcException extends RuntimeException {
     private final String errorMessage;
 
     public RpcException(String errorCode, String errorMessage) {
+        super(errorMessage);
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;
     }

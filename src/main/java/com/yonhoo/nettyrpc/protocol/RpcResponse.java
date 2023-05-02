@@ -1,5 +1,6 @@
 package com.yonhoo.nettyrpc.protocol;
 
+import com.yonhoo.nettyrpc.exception.RpcException;
 import java.io.Serializable;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,6 +19,7 @@ public class RpcResponse implements Serializable {
 
     private static final long serialVersionUID = 715745410605631233L;
     public static final int SUCCESS_CODE = 0;
+    public static final int SUCCESS = 0;
     /**
      * response code
      */
@@ -50,6 +52,13 @@ public class RpcResponse implements Serializable {
         response.setCode(errorCode);
         response.setMessage(errorMessage);
         return response;
+    }
+
+    public Object getData() {
+        if (code == SUCCESS) {
+            return data;
+        }
+        throw new RpcException(message);
     }
 
 }

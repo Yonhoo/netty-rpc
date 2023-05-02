@@ -1,19 +1,15 @@
 package com.yonhoo.nettyrpc.connection;
 
+import com.yonhoo.nettyrpc.common.Url;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.pool.AbstractChannelPoolHandler;
-import io.netty.channel.pool.ChannelPoolHandler;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.ObjectUtil;
-import java.nio.channels.ClosedChannelException;
-import java.util.ArrayDeque;
-import java.util.Queue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -21,12 +17,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class ConnectionPool extends BasePool {
+public class ConnectionPool {
+    //TODO separate executor
     private final EventExecutor executor;
     private final long acquireTimeoutNanos;
     private final AtomicInteger acquiredChannelCount;
     private boolean closed;
     private final AcquireTimeoutAction action;
+    private final ConcurrentHashMap<Url, BasePool> urlPoolMap = new ConcurrentHashMap<>();
+    private Bootstrap bootstrap;
 
     public ConnectionPool(Bootstrap bootstrap, int poolSize) {
         this(bootstrap, null, poolSize, -1);
@@ -37,7 +36,7 @@ public class ConnectionPool extends BasePool {
     }
 
     public ConnectionPool(Bootstrap bootstrap, AcquireTimeoutAction action, int poolSize, long acquireTimeoutMillis) {
-        super(bootstrap, new ClientChannelPoolHandler(), poolSize);
+        this.bootstrap = bootstrap;
         this.acquiredChannelCount = new AtomicInteger();
         ObjectUtil.checkPositive(poolSize, "pool Size");
         this.action = action;
@@ -58,31 +57,19 @@ public class ConnectionPool extends BasePool {
         this.executor = bootstrap.config().group().next();
     }
 
-    public void init() {
-        if (this.executor.inEventLoop()) {
-            super.init();
-        } else {
-            this.executor.execute(new Runnable() {
-                public void run() {
-                    ConnectionPool.super.init();
-                }
-            });
-        }
-    }
-
     public int acquiredChannelCount() {
         return this.acquiredChannelCount.get();
     }
 
-    public Future<Connection> acquireConnection() {
+    public Future<Connection> acquireConnection(Url url) {
         Promise<Connection> promise = this.executor.newPromise();
         try {
             if (this.executor.inEventLoop()) {
-                this.acquire0(promise);
+                doRequireConnection(url, promise);
             } else {
                 this.executor.execute(new Runnable() {
                     public void run() {
-                        ConnectionPool.this.acquire0(promise);
+                        ConnectionPool.this.doRequireConnection(url, promise);
                     }
                 });
             }
@@ -93,7 +80,18 @@ public class ConnectionPool extends BasePool {
         return promise;
     }
 
-    private void acquire0(Promise<Connection> promise) {
+    private void doRequireConnection(Url url, Promise<Connection> promise) {
+        BasePool basePool = urlPoolMap.get(url);
+        if (basePool == null) {
+            basePool = new BasePool(bootstrap, new ClientChannelPoolHandler(), 1, url);
+            basePool.init();
+            urlPoolMap.put(url, basePool);
+        }
+
+        this.acquire0(promise, basePool);
+    }
+
+    private void acquire0(Promise<Connection> promise, BasePool basePool) {
         try {
             assert this.executor.inEventLoop();
 
@@ -104,11 +102,11 @@ public class ConnectionPool extends BasePool {
 
             AcquireTask task = new AcquireTask(promise);
             if (this.action != null) {
-                task.timeoutFuture = this.executor.schedule(new TimeoutTask(task, action),
+                task.timeoutFuture = this.executor.schedule(new TimeoutTask(basePool, task, action),
                         this.acquireTimeoutNanos, TimeUnit.NANOSECONDS);
             }
 
-            super.acquire(task.promise);
+            basePool.acquire(task.promise);
 
         } catch (Throwable var4) {
             promise.tryFailure(var4);
@@ -186,7 +184,7 @@ public class ConnectionPool extends BasePool {
 
             return GlobalEventExecutor.INSTANCE.submit(new Callable<Void>() {
                 public Void call() throws Exception {
-                    ConnectionPool.super.close();
+                    urlPoolMap.values().forEach(BasePool::close);
                     return null;
                 }
             });
@@ -246,8 +244,10 @@ public class ConnectionPool extends BasePool {
     private class TimeoutTask implements Runnable {
         private final AcquireTask acquireTask;
         private final AcquireTimeoutAction action;
+        private final BasePool basePool;
 
-        private TimeoutTask(AcquireTask acquireTask, AcquireTimeoutAction action) {
+        private TimeoutTask(BasePool basePool, AcquireTask acquireTask, AcquireTimeoutAction action) {
+            this.basePool = basePool;
             this.acquireTask = acquireTask;
             this.action = action;
         }
@@ -260,7 +260,7 @@ public class ConnectionPool extends BasePool {
                     acquireTask.promise.setFailure(new AcquireTimeoutException());
                     break;
                 case NEW:
-                    ConnectionPool.super.acquire(acquireTask.promise);
+                    basePool.acquire(acquireTask.promise);
                     break;
                 default:
                     throw new Error();
@@ -281,11 +281,11 @@ public class ConnectionPool extends BasePool {
         }
     }
 
-    public static enum AcquireTimeoutAction {
+    public enum AcquireTimeoutAction {
         NEW,
         FAIL;
 
-        private AcquireTimeoutAction() {
+        AcquireTimeoutAction() {
         }
     }
 }

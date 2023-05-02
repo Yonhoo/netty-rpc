@@ -1,10 +1,9 @@
 package com.yonhoo.nettyrpc.client;
 
+
 import com.yonhoo.nettyrpc.common.CompressTypeEnum;
 import com.yonhoo.nettyrpc.common.RpcConstants;
-import com.yonhoo.nettyrpc.connection.ClientConnectionManager;
 import com.yonhoo.nettyrpc.connection.Connection;
-import com.yonhoo.nettyrpc.connection.DefaultClientConnectionManager;
 import com.yonhoo.nettyrpc.exception.RpcErrorCode;
 import com.yonhoo.nettyrpc.exception.RpcException;
 import com.yonhoo.nettyrpc.protocol.RpcMessage;
@@ -13,12 +12,10 @@ import com.yonhoo.nettyrpc.protocol.RpcMessageEncoder;
 import com.yonhoo.nettyrpc.protocol.RpcRequest;
 import com.yonhoo.nettyrpc.protocol.RpcResponse;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -29,21 +26,16 @@ import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class NettyClient {
     private Bootstrap bootstrap;
     private EventLoopGroup eventLoopGroup;
-    private ConcurrentHashMap<Class<?>, RpcClientProxy> serviceProxyMap;
-    private final AtomicInteger streamId = new AtomicInteger();
     private final NettyRpcClientHandler nettyRpcClientHandler = new NettyRpcClientHandler();
-    private final ClientConnectionManager clientConnectionManager;
-    private static int DEFAULT_POOL_SIZE = 5;
 
     public NettyClient(String host, int port) {
         // netty bootstrap should be wrap in class
@@ -70,9 +62,31 @@ public class NettyClient {
                     }
                 });
 
-        clientConnectionManager = new DefaultClientConnectionManager(bootstrap, DEFAULT_POOL_SIZE);
+    }
 
-        clientConnectionManager.startUp();
+    public NettyClient() {
+        // netty bootstrap should be wrap in class
+        eventLoopGroup = new NioEventLoopGroup();
+        bootstrap = new Bootstrap();
+
+        bootstrap.group(eventLoopGroup)
+                .channel(NioSocketChannel.class)
+                .handler(new LoggingHandler(LogLevel.INFO))
+                //  The timeout period of the connection.
+                //  If this time is exceeded or the connection cannot be established, the connection fails.
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
+                .option(ChannelOption.SO_KEEPALIVE, true)
+                .handler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    protected void initChannel(SocketChannel ch) {
+                        ChannelPipeline p = ch.pipeline();
+                        // If no data is sent to the server within 15 seconds, a heartbeat request is sent
+                        p.addLast(new IdleStateHandler(0, 0, 15, TimeUnit.SECONDS));
+                        p.addLast(new RpcMessageEncoder());
+                        p.addLast(new RpcMessageDecoder());
+                        p.addLast(nettyRpcClientHandler);
+                    }
+                });
     }
 
 //    public Channel connect() {
@@ -93,13 +107,12 @@ public class NettyClient {
         return null;
     }
 
-    public Object syncInvoke(RpcRequest request) {
-        Connection connection = clientConnectionManager.getConnection();
+    public Object syncInvoke(RpcRequest request, Connection connection) {
         if (connection.isFine()) {
             try {
                 RpcMessage rpcMessage = RpcMessage.builder()
                         .messageType(RpcConstants.REQUEST_TYPE)
-                        .requestId(streamId.getAndIncrement())
+                        .requestId(1)
                         .codec(RpcConstants.PROTOCOL_DEFAULT_TYPE)
                         .compress(CompressTypeEnum.NONE.getCode())
                         .data(request)
@@ -120,7 +133,7 @@ public class NettyClient {
 
                             }
                         });
-                return getResponse(responseFuture.get());
+                return responseFuture.get().getData();
             } catch (InterruptedException | ExecutionException e) {
                 if (e instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
@@ -138,11 +151,8 @@ public class NettyClient {
         return null;
     }
 
-    private Object getResponse(RpcResponse response) {
-        if (response.isSuccess()) {
-            return response.getData();
-        }
-        throw new RpcException(response.getMessage());
+    public Bootstrap getBootstrap() {
+        return bootstrap;
     }
 
     public void close() {

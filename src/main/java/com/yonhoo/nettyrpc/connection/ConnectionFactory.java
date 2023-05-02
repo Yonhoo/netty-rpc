@@ -1,5 +1,6 @@
 package com.yonhoo.nettyrpc.connection;
 
+import com.yonhoo.nettyrpc.common.Url;
 import com.yonhoo.nettyrpc.exception.RpcException;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -14,9 +15,9 @@ public class ConnectionFactory {
         this.bootstrap = bootstrap;
     }
 
-    public Connection createConnection() {
+    public Connection createConnection(Url url) {
         ChannelFuture channelFuture = bootstrap
-                .connect()
+                .connect(url.getAddress(), url.getPort())
                 .awaitUninterruptibly()
                 .addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {

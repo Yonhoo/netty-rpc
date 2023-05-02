@@ -1,28 +1,23 @@
 package com.yonhoo.nettyrpc.connection;
 
+import com.yonhoo.nettyrpc.client.NettyClient;
+import com.yonhoo.nettyrpc.common.Url;
 import com.yonhoo.nettyrpc.exception.RpcException;
-import io.netty.bootstrap.Bootstrap;
 import io.netty.util.concurrent.Future;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DefaultClientConnectionManager implements ClientConnectionManager {
-    private ConnectionPool connectionPool;
-    private final Bootstrap bootstrap;
-    private final int connectionPoolSize;
+    private final ConnectionPool connectionPool;
+    private static final NettyClient nettyClient = new NettyClient();
 
-    public DefaultClientConnectionManager(Bootstrap bootstrap, int connectionPoolSize) {
-        this.bootstrap = bootstrap;
-        this.connectionPoolSize = connectionPoolSize;
-        this.connectionPool = new ConnectionPool(bootstrap, connectionPoolSize);
+    public DefaultClientConnectionManager() {
+        this.connectionPool = new ConnectionPool(nettyClient.getBootstrap(), 1);
     }
 
-    public void startUp() {
-        connectionPool.init();
-    }
-
-    public Connection getConnection() {
-        Future<Connection> connectionFuture = connectionPool.acquireConnection().awaitUninterruptibly();
+    @Override
+    public Connection getConnection(Url url) {
+        Future<Connection> connectionFuture = connectionPool.acquireConnection(url).awaitUninterruptibly();
         if (connectionFuture.isSuccess()) {
             return connectionFuture.getNow();
         }

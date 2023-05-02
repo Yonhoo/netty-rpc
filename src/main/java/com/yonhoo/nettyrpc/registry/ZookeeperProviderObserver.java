@@ -20,6 +20,7 @@ import org.apache.logging.log4j.util.Strings;
 @Slf4j
 public class ZookeeperProviderObserver {
 
+    public static final String PROVIDERS = "providers";
     private ConcurrentMap<ConsumerConfig, List<ProviderInfoListener>>
             providerListenerMap = new ConcurrentHashMap<ConsumerConfig, List<ProviderInfoListener>>();
 
@@ -49,22 +50,28 @@ public class ZookeeperProviderObserver {
 
     private ProviderInfo buildProviderInfoByBytes(ChildData data, String rootPath, String servicePath) {
         Map<String, String> dataMap = buildStringMapFromBytes(data);
+        String portWithAddressStr = servicePath.substring(servicePath.indexOf(PROVIDERS) +
+                PROVIDERS.length() + 1);
+
+        String[] portWithAddress = portWithAddressStr.split(":");
 
         return ProviderInfo.builder()
                 .rootPath(rootPath)
                 .servicePath(servicePath)
+                .port(Integer.valueOf(portWithAddress[1]))
+                .address(portWithAddress[0])
                 .providerName(dataMap.getOrDefault(RpcConstants.PROVIDER_NAME, null))
                 .weight(Double.parseDouble(dataMap.getOrDefault(RpcConstants.SERVICE_WEIGHT, "0.0")))
                 .build();
     }
 
     private Map<String, String> buildStringMapFromBytes(ChildData data) {
-        if (Objects.nonNull(data.getData())) {
+        if (Objects.isNull(data.getData())) {
             return Collections.emptyMap();
         }
 
         String dataStr = new String(data.getData());
-        return Arrays.stream(URLDecoder.decode(dataStr).split("&"))
+        return Arrays.stream(URLDecoder.decode(dataStr, StandardCharsets.UTF_8).split("&"))
                 .filter(Strings::isNotBlank)
                 .map(item -> {
                     String[] keyAndValue = item.split("=");
@@ -109,6 +116,10 @@ public class ZookeeperProviderObserver {
 
     public void addProvider(ConsumerConfig config, String providerPath, ChildData data) {
 
+        if (providerPath.equals(data.getPath())) {
+            log.info("filter root provider path {}", providerPath);
+            return;
+        }
         log.info("interface {} get provider add info: path({}) ， data : [{}] , stat[{}]",
                 config.getConsumerInterface(),
                 data.getPath(),
@@ -121,8 +132,6 @@ public class ZookeeperProviderObserver {
         } catch (RuntimeException e) {
             log.error(e.getMessage());
         }
-
-        System.out.println("dasdasd");
 
     }
 

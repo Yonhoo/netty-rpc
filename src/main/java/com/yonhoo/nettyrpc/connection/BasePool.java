@@ -1,5 +1,6 @@
 package com.yonhoo.nettyrpc.connection;
 
+import com.yonhoo.nettyrpc.common.Url;
 import com.yonhoo.nettyrpc.exception.RpcException;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -23,15 +24,17 @@ public class BasePool {
     private final Bootstrap bootstrap;
     private final ConnectionFactory connectionFactory;
     private final int poolSize;
+    private final Url url;
 
-    public BasePool(Bootstrap bootstrap, ChannelPoolHandler handler, int poolSize) {
-        this(bootstrap, handler, ChannelHealthChecker.ACTIVE, poolSize);
+    public BasePool(Bootstrap bootstrap, ChannelPoolHandler handler, int poolSize, Url url) {
+        this(bootstrap, handler, ChannelHealthChecker.ACTIVE, poolSize, url);
     }
 
     public BasePool(Bootstrap bootstrap, ChannelPoolHandler handler,
-                    ChannelHealthChecker healthCheck, int poolSize) {
+                    ChannelHealthChecker healthCheck, int poolSize, Url url) {
         this.poolSize = ObjectUtil.checkPositive(poolSize, "pool size should be greater than 0");
         this.bootstrap = (ObjectUtil.checkNotNull(bootstrap, "bootstrap")).clone();
+        this.url = url;
         this.connectionFactory = new ConnectionFactory(this.bootstrap);
         this.connectionDequeue = new ArrayDeque<>();
         this.handler = ObjectUtil.checkNotNull(handler, "handler");
@@ -41,7 +44,7 @@ public class BasePool {
     public void init() {
         for (int i = 0; i < poolSize; i++) {
             try {
-                Connection connection = connectionFactory.createConnection();
+                Connection connection = connectionFactory.createConnection(url);
                 connectionDequeue.addLast(connection);
             } catch (RpcException e) {
                 log.warn("connection pool init connection error ", e);
@@ -58,7 +61,7 @@ public class BasePool {
             final Connection connection = this.pollConnection();
             if (connection == null && connectionDequeue.size() < poolSize) {
                 log.info("create new connection when acquire empty connection from poll");
-                Connection newConnection = connectionFactory.createConnection();
+                Connection newConnection = connectionFactory.createConnection(url);
                 if (newConnection.isFine()) {
                     this.notifyConnect(newConnection, promise);
                     // new connection offer into dequeue

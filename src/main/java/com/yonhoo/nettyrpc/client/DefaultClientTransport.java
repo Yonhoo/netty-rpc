@@ -10,6 +10,7 @@ import com.yonhoo.nettyrpc.protocol.RpcMessage;
 import com.yonhoo.nettyrpc.protocol.RpcRequest;
 import com.yonhoo.nettyrpc.protocol.RpcResponse;
 import com.yonhoo.nettyrpc.registry.ProviderInfo;
+
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import java.util.concurrent.CompletableFuture;
@@ -19,9 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DefaultClientTransport {
-    private static final NettyClient nettyClient = new NettyClient();
     // default singleton
-    private static final DefaultClientConnectionManager connectionManager = new DefaultClientConnectionManager(nettyClient);
+    private static final DefaultClientConnectionManager connectionManager = new DefaultClientConnectionManager();
     private static final AtomicInteger streamId = new AtomicInteger();
 
     public Object doSend(RpcRequest request, InvokeContext invokeContext) {
@@ -52,7 +52,7 @@ public class DefaultClientTransport {
 
                             }
                         });
-                return getResponse(responseFuture.get());
+                return responseFuture.get().getData();
             } catch (InterruptedException | ExecutionException e) {
                 if (e instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
@@ -64,12 +64,5 @@ public class DefaultClientTransport {
             log.error("invoke service[{}] method[{}] error", request.getServiceName(), request.getMethodName());
             throw RpcException.with(RpcErrorCode.RPC_CHANNEL_IS_NOT_ACTIVE);
         }
-    }
-
-    private Object getResponse(RpcResponse response) {
-        if (response.isSuccess()) {
-            return response.getData();
-        }
-        throw new RpcException(response.getMessage());
     }
 }

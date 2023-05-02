@@ -1,5 +1,7 @@
 package com.yonhoo.nettyrpc.registry;
 
+import com.yonhoo.nettyrpc.common.Url;
+import java.net.MalformedURLException;
 import lombok.Builder;
 import lombok.Data;
 
@@ -15,5 +17,9 @@ public class ProviderInfo {
 
     public boolean isProviderPath() {
         return rootPath.equals(servicePath);
+    }
+
+    public Url getUrl() {
+        return new Url(address, port);
     }
 }

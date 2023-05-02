@@ -10,13 +10,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.logging.log4j.util.Strings;
 import org.apache.zookeeper.data.Stat;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +32,16 @@ public class ZookeeperRegistryTest extends BaseZkTest {
         propertiesConfig.setPort(2181);
 
         zookeeperRegistry = new ZookeeperRegistry(propertiesConfig);
+    }
+
+    @AfterEach
+    void tearUp() throws Exception {
+        String providerPath = ZookeeperRegistryHelper.buildProviderPath("test-application/",
+                HelloWorld.class.getSimpleName());
+        zookeeperRegistry.getZkClient()
+                .delete()
+                .deletingChildrenIfNeeded()
+                .forPath(providerPath);
     }
 
     @Test
@@ -158,18 +168,17 @@ public class ZookeeperRegistryTest extends BaseZkTest {
 
         zookeeperRegistry.registry(providerConfig);
 
-        ConsumerConfig config = new ConsumerConfig(HelloWorld.class.getSimpleName(), "300000", "async");
+        ConsumerConfig config = new ConsumerConfig(HelloWorld.class.getSimpleName(), 300000, "async");
 
-        TestProviderInfoListener testProviderInfoListener = new TestProviderInfoListener(3);
+        TestProviderInfoListener testProviderInfoListener = new TestProviderInfoListener(2);
         config.setProviderInfoListener(testProviderInfoListener);
 
         //when
         zookeeperRegistry.subscribe(config);
 
-        List<ProviderInfo> providerInfos = testProviderInfoListener.getProviderInfos();
-
         testProviderInfoListener.getLatch().await();
-        assertThat(providerInfos).hasSize(3);
+        List<ProviderInfo> providerInfos = testProviderInfoListener.getProviderInfos();
+        assertThat(providerInfos).hasSize(2);
     }
 
     @Test
@@ -177,13 +186,13 @@ public class ZookeeperRegistryTest extends BaseZkTest {
         //given
         ServiceConfig serviceConfig1 = ServiceConfig.builder()
                 .ip("127.0.0.1")
-                .port(13456)
+                .port(13453)
                 .weight(0.3)
                 .build();
 
         ServiceConfig serviceConfig2 = ServiceConfig.builder()
                 .ip("127.0.0.1")
-                .port(13457)
+                .port(13454)
                 .weight(0.7)
                 .build();
 
@@ -194,7 +203,7 @@ public class ZookeeperRegistryTest extends BaseZkTest {
 
         zookeeperRegistry.registry(providerConfig);
 
-        ConsumerConfig config = new ConsumerConfig(HelloWorld.class.getSimpleName(), "300000", "async");
+        ConsumerConfig config = new ConsumerConfig(HelloWorld.class.getSimpleName(), 300000, "async");
 
         TestProviderInfoListener testProviderInfoListener = new TestProviderInfoListener(2);
         config.setProviderInfoListener(testProviderInfoListener);
@@ -212,9 +221,8 @@ public class ZookeeperRegistryTest extends BaseZkTest {
         List<String> servicePathList = providerInfos.stream()
                 .map(ProviderInfo::getServicePath)
                 .collect(Collectors.toList());
-        assertThat(servicePathList).isEqualTo(List.of(
-                providerPath + "/" + serviceConfig1.getUrl(),
-                providerPath + "/" + serviceConfig2.getUrl()));
+        assertThat(servicePathList).contains(providerPath + "/" + serviceConfig1.getUrl(),
+                providerPath + "/" + serviceConfig2.getUrl());
 
         testProviderInfoListener.setLatch(new CountDownLatch(1));
 

@@ -1,7 +1,7 @@
 package com.yonhoo.nettyrpc.connection;
 
-public interface ClientConnectionManager {
-    Connection getConnection();
+import com.yonhoo.nettyrpc.common.Url;
 
-    void startUp();
+public interface ClientConnectionManager {
+    Connection getConnection(Url url);
 }

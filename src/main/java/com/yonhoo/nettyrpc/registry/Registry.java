@@ -1,6 +1,6 @@
 package com.yonhoo.nettyrpc.registry;
 
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public interface Registry {
 
@@ -8,7 +8,9 @@ public interface Registry {
 
     boolean unRegistry(ProviderConfig providerConfig);
 
-    void subscribe(ConsumerConfig config);
+    void subscribe(ConsumerConfig config) throws InterruptedException;
+
+    void subscribe(ConsumerConfig config, long waitTime, TimeUnit timeUnit) throws InterruptedException;
 
     void unSubscribe(ConsumerConfig config);
 
