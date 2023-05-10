@@ -12,7 +12,6 @@ import com.yonhoo.nettyrpc.protocol.RpcMessageEncoder;
 import com.yonhoo.nettyrpc.protocol.RpcRequest;
 import com.yonhoo.nettyrpc.protocol.RpcResponse;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;

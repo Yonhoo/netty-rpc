@@ -13,4 +13,6 @@ public class ServerConfig {
     private long connAliveTime;
     private long threadAliveTime;
     private Integer queueSize;
+    private String registryAddress;
+    private int registryPort;
 }

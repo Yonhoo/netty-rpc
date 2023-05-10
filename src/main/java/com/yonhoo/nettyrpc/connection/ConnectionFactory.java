@@ -21,23 +21,23 @@ public class ConnectionFactory {
                 .awaitUninterruptibly()
                 .addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
-                        log.info("The netty client connected to {} successful!", bootstrap.config().remoteAddress());
+                        log.info("The netty client connected to {}:{} successful!", url.getAddress(), url.getPort());
                     } else {
                         throw new IllegalStateException("netty client start error: ", future.cause());
                     }
                 });
         if (!channelFuture.isDone()) {
-            String errMsg = "Create connection to " + bootstrap.config().remoteAddress() + " not done!";
+            String errMsg = "Create connection to " + url.getAddress() + ":" + url.getPort() + " not done!";
             log.warn(errMsg);
             throw new RpcException(errMsg);
         }
         if (channelFuture.isCancelled()) {
-            String errMsg = "Create connection to " + bootstrap.config().remoteAddress() + " cancelled by user!";
+            String errMsg = "Create connection to " + url.getAddress() + ":" + url.getPort() + " cancelled by user!";
             log.warn(errMsg);
             throw new RpcException(errMsg);
         }
         if (!channelFuture.isSuccess()) {
-            String errMsg = "Create connection to " + bootstrap.config().remoteAddress() + " error!";
+            String errMsg = "Create connection to " + url.getAddress() + ":" + url.getPort() + " error!";
             log.warn(errMsg);
             throw new RpcException(errMsg, channelFuture.cause());
         }

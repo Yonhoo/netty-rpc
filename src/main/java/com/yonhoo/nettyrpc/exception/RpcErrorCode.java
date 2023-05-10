@@ -10,7 +10,8 @@ public enum RpcErrorCode {
     RPC_MESSAGE_TYPE_NOT_BE_EMPTY("10007", "rpc message type not be empty"),
     REGISTRY_CLIENT_START_EXCEPTION("10008", "registry client start exception"),
     REGISTRY_CLIENT_UNAVAILABLE("10009", "registry client unavailable"),
-    REGISTRY_UNSUBSCRIBE_EXCEPTION("10010", "registry client unsubscribe exception");
+    REGISTRY_UNSUBSCRIBE_EXCEPTION("10010", "registry client unsubscribe exception"),
+    SERVICE_IS_EMPTY("10011", "service list is empty");
 
     private final String code;
     private final String message;

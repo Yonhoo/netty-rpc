@@ -1,11 +1,13 @@
 package com.yonhoo.nettyrpc.client;
 
 import com.yonhoo.nettyrpc.common.ApplicationContextUtil;
+import com.yonhoo.nettyrpc.exception.RpcErrorCode;
+import com.yonhoo.nettyrpc.exception.RpcException;
 import com.yonhoo.nettyrpc.registry.ConsumerConfig;
 import com.yonhoo.nettyrpc.registry.DefaultProviderInfoListener;
 import com.yonhoo.nettyrpc.registry.Registry;
 import com.yonhoo.nettyrpc.registry.ZookeeperRegistry;
-import java.util.concurrent.CountDownLatch;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public class DefaultConsumerBootstrap<T> {
@@ -33,7 +35,11 @@ public class DefaultConsumerBootstrap<T> {
                 consumerConfig.setProviderInfoListener(new DefaultProviderInfoListener(invokerBroker));
             }
 
-            Registry registry = (Registry) ApplicationContextUtil.getBean(ZookeeperRegistry.class.getName());
+            Registry registry = ApplicationContextUtil.getBean(ZookeeperRegistry.class);
+
+            if (Objects.isNull(registry)) {
+                throw RpcException.with(RpcErrorCode.REGISTRY_CLIENT_UNAVAILABLE);
+            }
 
             // refer fast , so might get empty provider info before get notify from registry
             registry.subscribe(consumerConfig, 2, TimeUnit.SECONDS);

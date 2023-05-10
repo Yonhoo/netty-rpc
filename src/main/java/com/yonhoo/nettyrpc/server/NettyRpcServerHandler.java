@@ -13,14 +13,17 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.ReferenceCountUtil;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
     public static final int REQUEST_FAIL = -1;
     public static final String CHANNEL_INACTIVE = "channel inactive";
-    private static final ConcurrentHashMap<String, ServerServiceDefinition> serviceDefinitionMap = new ConcurrentHashMap<>();
+    private final NettyServer nettyServer;
+
+    public NettyRpcServerHandler(NettyServer nettyServer) {
+        this.nettyServer = nettyServer;
+    }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
@@ -63,7 +66,7 @@ public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
     private Object doRequestInvoke(RpcRequest rpcRequest) {
 
         String serviceName = rpcRequest.getServiceName();
-        ServerServiceDefinition serverServiceDefinition = serviceDefinitionMap.get(serviceName);
+        ServerServiceDefinition serverServiceDefinition = nettyServer.getServiceDefinitionByName(serviceName);
 
         if (serverServiceDefinition == null) {
             throw RpcException.with(RpcErrorCode.SERVICE_NOT_REGISTERED);
@@ -79,12 +82,6 @@ public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
         if (RpcConstants.REQUEST_TYPE != msg.getMessageType()) {
             throw RpcException.with(RpcErrorCode.CHANNEL_READ_IS_NOT_REQUEST_TYPE);
         }
-    }
-
-    public static void setServiceDefinition(List<ServerServiceDefinition> serviceDefinitionList) {
-        serviceDefinitionList.forEach(serverServiceDefinition ->
-                serviceDefinitionMap.put(serverServiceDefinition.getServiceName(), serverServiceDefinition)
-        );
     }
 
     @Override

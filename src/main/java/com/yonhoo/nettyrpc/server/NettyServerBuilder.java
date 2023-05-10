@@ -2,32 +2,32 @@ package com.yonhoo.nettyrpc.server;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.jni.Address;
+import org.apache.tomcat.jni.Socket;
 
 @Slf4j
 @Getter
 public class NettyServerBuilder implements ServerBuilder {
 
-    private final SocketAddress listenAddress;
+    private final InetSocketAddress listenAddress;
     private final List<ServerServiceDefinition> serviceDefinitionList = new ArrayList<>();
     private final Map<Object, Object> channelOptionals;
     private final Map<Object, Object> childChannelOptionals;
     private final ServerConfig serverConfig = new ServerConfig();
 
-    public static NettyServerBuilder forPort(int port) {
-        return forAddress(new InetSocketAddress(port));
+    public static NettyServerBuilder forAddress(String address, int port) {
+        return new NettyServerBuilder(new InetSocketAddress(address, port));
     }
 
-    private static NettyServerBuilder forAddress(InetSocketAddress address) {
-        return new NettyServerBuilder(address);
-    }
-
-    private NettyServerBuilder(SocketAddress address) {
+    private NettyServerBuilder(InetSocketAddress address) {
         this.channelOptionals = new HashMap<>();
         this.childChannelOptionals = new HashMap<>();
         this.listenAddress = address;
