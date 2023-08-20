@@ -24,4 +24,10 @@ public class DefaultClientConnectionManager implements ClientConnectionManager {
         log.error("get connection error", connectionFuture.cause());
         throw new RpcException(connectionFuture.cause().getMessage());
     }
+
+    @Override
+    public void close() {
+        connectionPool.close();
+        nettyClient.close();
+    }
 }

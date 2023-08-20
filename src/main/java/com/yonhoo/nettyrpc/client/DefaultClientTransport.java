@@ -1,6 +1,7 @@
 package com.yonhoo.nettyrpc.client;
 
 import com.yonhoo.nettyrpc.common.CompressTypeEnum;
+import com.yonhoo.nettyrpc.common.Destroyable;
 import com.yonhoo.nettyrpc.common.RpcConstants;
 import com.yonhoo.nettyrpc.connection.Connection;
 import com.yonhoo.nettyrpc.connection.DefaultClientConnectionManager;
@@ -13,13 +14,15 @@ import com.yonhoo.nettyrpc.registry.ProviderInfo;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class DefaultClientTransport {
+public class DefaultClientTransport implements Destroyable {
     // default singleton
     private static final DefaultClientConnectionManager connectionManager = new DefaultClientConnectionManager();
     private static final AtomicInteger streamId = new AtomicInteger();
@@ -39,7 +42,6 @@ public class DefaultClientTransport {
 
                 CompletableFuture<RpcResponse> responseFuture = new CompletableFuture<>();
                 connection.addInvokeFuture(rpcMessage.getRequestId(), responseFuture);
-                //nettyRpcClientHandler.setStreamResponsePromise(rpcMessage.getRequestId(), responseFuture);
                 //TODO add future listener handle
                 connection.getChannel().writeAndFlush(rpcMessage)
                         .addListener(new FutureListener<Void>() {
@@ -64,5 +66,10 @@ public class DefaultClientTransport {
             log.error("invoke service[{}] method[{}] error", request.getServiceName(), request.getMethodName());
             throw RpcException.with(RpcErrorCode.RPC_CHANNEL_IS_NOT_ACTIVE);
         }
+    }
+
+    @Override
+    public void destroy() {
+        connectionManager.close();
     }
 }

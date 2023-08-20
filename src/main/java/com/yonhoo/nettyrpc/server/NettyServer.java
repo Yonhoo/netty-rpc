@@ -2,6 +2,7 @@ package com.yonhoo.nettyrpc.server;
 
 import com.google.common.base.Preconditions;
 import com.yonhoo.nettyrpc.common.ApplicationContextUtil;
+import com.yonhoo.nettyrpc.common.Destroyable;
 import com.yonhoo.nettyrpc.exception.RpcErrorCode;
 import com.yonhoo.nettyrpc.exception.RpcException;
 import com.yonhoo.nettyrpc.protocol.RpcMessageDecoder;
@@ -22,25 +23,29 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+
 import java.net.InetSocketAddress;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import io.netty.util.concurrent.Future;
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.SocketAddress;
-
 @Slf4j
-public class NettyServer {
+public class NettyServer implements Destroyable {
     private final InetSocketAddress address;
     private final EventLoopGroup bossGroup;
     private final EventLoopGroup workerGroup;
     private Registry registry;
     private final ServerConfig serverConfig;
+
+    private boolean available = true;
     private final HashMap<String, ServerServiceDefinition> serviceDefinitionMap = new HashMap<>();
 
     public NettyServer(InetSocketAddress listenAddress, ServerConfig serverConfig,
@@ -53,6 +58,7 @@ public class NettyServer {
                 serviceDefinitionMap.put(serverServiceDefinition.getServiceName(), serverServiceDefinition)
         );
 
+        Runtime.getRuntime().addShutdownHook(new Thread(this::destroy, "NettyRpcShutdownHook"));
     }
 
     public void start() {
@@ -137,5 +143,27 @@ public class NettyServer {
 
     public void close() {
         bossGroup.shutdownGracefully();
+    }
+
+    @Override
+    public void destroy() {
+        if (!available) {
+            return;
+        }
+
+        available = false;
+
+        registry.destroy();
+
+        Integer stopTimeOutSeconds = Optional.ofNullable(serverConfig.getStopTimeOutSeconds()).orElse(30000);
+
+        Future<?> shutDownGracefully = bossGroup.shutdownGracefully(2,
+                stopTimeOutSeconds, TimeUnit.SECONDS);
+
+        serviceDefinitionMap.values().forEach(ServerServiceDefinition::destroy);
+
+        shutDownGracefully.awaitUninterruptibly();
+        log.info("waiting for stop time out :{}", stopTimeOutSeconds);
+
     }
 }

@@ -24,10 +24,12 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import java.util.concurrent.TimeUnit;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -60,7 +62,6 @@ public class NettyClient {
                         p.addLast(nettyRpcClientHandler);
                     }
                 });
-
     }
 
     public NettyClient() {

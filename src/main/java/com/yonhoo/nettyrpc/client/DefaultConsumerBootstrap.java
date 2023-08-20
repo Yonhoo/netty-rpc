@@ -7,7 +7,10 @@ import com.yonhoo.nettyrpc.registry.ConsumerConfig;
 import com.yonhoo.nettyrpc.registry.DefaultProviderInfoListener;
 import com.yonhoo.nettyrpc.registry.Registry;
 import com.yonhoo.nettyrpc.registry.ZookeeperRegistry;
+
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 public class DefaultConsumerBootstrap<T> {
@@ -15,8 +18,18 @@ public class DefaultConsumerBootstrap<T> {
     private InvokerBroker invokerBroker;
     private T proxyInvoker;
 
+    private static final ConcurrentMap<ConsumerConfig, InvokerBroker> consumerInvokers = new ConcurrentHashMap<>();
+
     public DefaultConsumerBootstrap(ConsumerConfig consumerConfig) {
         this.consumerConfig = consumerConfig;
+    }
+
+    static {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            consumerInvokers.values().forEach(InvokerBroker::destroy);
+            Registry registry = ApplicationContextUtil.getBean(ZookeeperRegistry.class);
+            registry.destroy();
+        }));
     }
 
     public T refer() throws Exception {
@@ -48,7 +61,10 @@ public class DefaultConsumerBootstrap<T> {
 
             proxyInvoker = rpcClientProxy.getProxy();
 
+            consumerInvokers.put(consumerConfig, invokerBroker);
+
             return proxyInvoker;
         }
+
     }
 }

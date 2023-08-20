@@ -1,14 +1,16 @@
 package com.yonhoo.nettyrpc.client;
 
+import com.yonhoo.nettyrpc.common.Destroyable;
 import com.yonhoo.nettyrpc.load_balancer.DefaultLoadBalancer;
 import com.yonhoo.nettyrpc.load_balancer.LoadBalancer;
 import com.yonhoo.nettyrpc.protocol.RpcRequest;
 import com.yonhoo.nettyrpc.registry.ConsumerConfig;
 import com.yonhoo.nettyrpc.registry.ProviderInfo;
 import com.yonhoo.nettyrpc.registry.ProviderInfoListener;
+
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class InvokerBroker implements ProviderInfoListener {
+public class InvokerBroker implements ProviderInfoListener, Destroyable {
     private ConsumerConfig consumerConfig;
     private final LoadBalancer loadBalancer = new DefaultLoadBalancer();
     private final CopyOnWriteArrayList<ProviderInfo> providerInfos = new CopyOnWriteArrayList<>();
@@ -50,5 +52,10 @@ public class InvokerBroker implements ProviderInfoListener {
 
     public ConsumerConfig getConsumerConfig() {
         return consumerConfig;
+    }
+
+    @Override
+    public void destroy() {
+        defaultClientTransport.destroy();
     }
 }

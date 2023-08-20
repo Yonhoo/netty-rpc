@@ -19,7 +19,8 @@ public class ServerMain extends BaseIntegrationTest {
                         new HelloWorldImpl(),
                         HelloWorld.class,
                         1,
-                        null);
+                        null,
+                        10);
 
         NettyServer nettyServer = NettyServerBuilder.forAddress("127.0.0.1", 13456)
                 .addService(helloWorldService)

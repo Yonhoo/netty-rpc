@@ -1,15 +1,15 @@
 package com.yonhoo.nettyrpc.registry;
 
 
+import com.yonhoo.nettyrpc.common.Destroyable;
 import com.yonhoo.nettyrpc.config.RegistryPropertiesConfig;
 import com.yonhoo.nettyrpc.exception.RpcErrorCode;
 import com.yonhoo.nettyrpc.exception.RpcException;
+
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class ZookeeperRegistry implements Registry {
+public class ZookeeperRegistry implements Registry, Destroyable {
 
     public static final String CONTEXT_SEP = "/";
     private CuratorFramework zkClient;
@@ -31,6 +31,8 @@ public class ZookeeperRegistry implements Registry {
     private final ZookeeperProviderObserver providerObserver = new ZookeeperProviderObserver();
     private static final ConcurrentMap<ConsumerConfig, CuratorCache>
             INTERFACE_PROVIDER_CACHE = new ConcurrentHashMap<>();
+
+    private static final ConcurrentLinkedQueue<String> SERVICE_PATHS = new ConcurrentLinkedQueue<>();
 
     public ZookeeperRegistry(RegistryPropertiesConfig registryPropertiesConfig) {
         registryConfig = RegistryConfig.builder()
@@ -88,6 +90,8 @@ public class ZookeeperRegistry implements Registry {
                 String servicePath = providerPath + CONTEXT_SEP + serviceConfig.getUrl();
 
                 log.info("registry server path: {}", servicePath);
+
+                SERVICE_PATHS.add(servicePath);
 
                 getAndCheckZkClient().create().creatingParentContainersIfNeeded()
                         .withMode(CreateMode.EPHEMERAL)
@@ -194,9 +198,27 @@ public class ZookeeperRegistry implements Registry {
 
     @Override
     public void destroy() {
-        INTERFACE_PROVIDER_CACHE.forEach((consumerConfig, curatorCache) -> curatorCache.close());
-
         if (zkClient != null && zkClient.getState() == CuratorFrameworkState.STARTED) {
+            INTERFACE_PROVIDER_CACHE.forEach((consumerConfig, curatorCache) -> {
+                try {
+                    curatorCache.close();
+                } catch (Exception e) {
+                    log.warn("close zookeeper client connection {} error ", consumerConfig, e);
+                }
+            });
+
+            INTERFACE_PROVIDER_CACHE.clear();
+
+            SERVICE_PATHS.forEach((servicePath) -> {
+                try {
+                    getAndCheckZkClient()
+                            .delete()
+                            .forPath(servicePath);
+                } catch (Exception e) {
+                    log.warn("delete service path error {}", servicePath, e);
+                }
+            });
+
             zkClient.close();
         }
     }

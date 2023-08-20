@@ -15,4 +15,5 @@ public class ServerConfig {
     private Integer queueSize;
     private String registryAddress;
     private int registryPort;
+    private Integer stopTimeOutSeconds;
 }
