@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 
 public class RpcRunTimeContext {
+    public static final String DEFAULT_STOP_TIME_OUT = "10";
     public static String STOP_TIME_OUT = "stopTimeOut";
 
     private static final Map<String, String> rpcContextConfig = new HashMap<>();
@@ -13,9 +14,9 @@ public class RpcRunTimeContext {
     /**
      * graceful shut down time out , unit second
      */
-    public static Long stopTimeOut() {
-        return Long.valueOf(Optional.ofNullable(rpcContextConfig.get(STOP_TIME_OUT))
-                .orElse("0"));
+    public static Integer stopTimeOut() {
+        return Integer.valueOf(Optional.ofNullable(rpcContextConfig.get(STOP_TIME_OUT))
+                .orElse(DEFAULT_STOP_TIME_OUT));
     }
 
     public static void putAttribute(String attributeName, String attributeValue, String defaultValue) {

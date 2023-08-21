@@ -12,7 +12,9 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.ReferenceCountUtil;
+
 import java.util.List;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -68,7 +70,7 @@ public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
         String serviceName = rpcRequest.getServiceName();
         ServerServiceDefinition serverServiceDefinition = nettyServer.getServiceDefinitionByName(serviceName);
 
-        if (serverServiceDefinition == null) {
+        if (serverServiceDefinition == null || !serverServiceDefinition.isAvailable()) {
             throw RpcException.with(RpcErrorCode.SERVICE_NOT_REGISTERED);
         }
 

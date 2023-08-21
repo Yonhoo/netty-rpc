@@ -11,7 +11,9 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.Attribute;
+
 import java.util.concurrent.CompletableFuture;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -30,6 +32,7 @@ public class NettyRpcClientHandler extends ChannelInboundHandlerAdapter {
                 responseFuture.complete((RpcResponse) rpcMessage.getData());
             }
         } catch (NullPointerException e) {
+            e.printStackTrace();
             log.warn("this stream message was removed: {}", rpcMessage);
         }
 

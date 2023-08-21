@@ -3,6 +3,7 @@ package com.yonhoo.nettyrpc.server;
 import com.google.common.base.Preconditions;
 import com.yonhoo.nettyrpc.common.ApplicationContextUtil;
 import com.yonhoo.nettyrpc.common.Destroyable;
+import com.yonhoo.nettyrpc.common.RpcRunTimeContext;
 import com.yonhoo.nettyrpc.exception.RpcErrorCode;
 import com.yonhoo.nettyrpc.exception.RpcException;
 import com.yonhoo.nettyrpc.protocol.RpcMessageDecoder;
@@ -12,12 +13,7 @@ import com.yonhoo.nettyrpc.registry.Registry;
 import com.yonhoo.nettyrpc.registry.ServiceConfig;
 import com.yonhoo.nettyrpc.registry.ZookeeperRegistry;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -32,6 +28,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import io.netty.util.concurrent.Future;
@@ -45,7 +42,7 @@ public class NettyServer implements Destroyable {
     private Registry registry;
     private final ServerConfig serverConfig;
 
-    private boolean available = true;
+    private final AtomicBoolean available = new AtomicBoolean(true);
     private final HashMap<String, ServerServiceDefinition> serviceDefinitionMap = new HashMap<>();
 
     public NettyServer(InetSocketAddress listenAddress, ServerConfig serverConfig,
@@ -73,7 +70,8 @@ public class NettyServer implements Destroyable {
             registry = ApplicationContextUtil.getBean(ZookeeperRegistry.class);
 
             if (Objects.nonNull(registry)) {
-                List<ProviderConfig> providerConfigs = buildServiceConfig(new ArrayList<>(serviceDefinitionMap.values()));
+                List<ProviderConfig> providerConfigs =
+                        buildServiceConfig(new ArrayList<>(serviceDefinitionMap.values()));
                 providerConfigs.forEach(registry::registry);
             }
 
@@ -85,8 +83,8 @@ public class NettyServer implements Destroyable {
             }
             log.error("server start address [{}] error ", address.toString(), exception);
         } finally {
-            log.error("shutdown bossGroup and workerGroup");
-            bossGroup.shutdownGracefully();
+            log.info("shutdown bossGroup and workerGroup");
+            destroy();
         }
 
     }
@@ -114,14 +112,13 @@ public class NettyServer implements Destroyable {
                 });
 
         // bind remote address
-        return bootstrap.bind(this.address).sync()
-                .addListener((ChannelFutureListener) future -> {
-                    if (future.isSuccess()) {
-                        log.info("The netty server has connected [{}] successful!", address);
-                    } else {
-                        throw new IllegalStateException("netty server start error");
-                    }
-                });
+        return bootstrap.bind(this.address).sync().addListener((ChannelFutureListener) future -> {
+            if (future.isSuccess()) {
+                log.info("The netty server has connected [{}] successful!", address);
+            } else {
+                throw new IllegalStateException("netty server start error");
+            }
+        });
     }
 
     private List<ProviderConfig> buildServiceConfig(List<ServerServiceDefinition> serviceDefinitions) {
@@ -141,29 +138,31 @@ public class NettyServer implements Destroyable {
         return serviceDefinitionMap.get(serviceName);
     }
 
-    public void close() {
-        bossGroup.shutdownGracefully();
-    }
-
     @Override
     public void destroy() {
-        if (!available) {
+        if (!available.compareAndSet(true, false)) {
             return;
         }
 
-        available = false;
+        log.info("shut down gracefully start!!!");
 
+        // 1. unregister service in registry center
         registry.destroy();
 
-        Integer stopTimeOutSeconds = Optional.ofNullable(serverConfig.getStopTimeOutSeconds()).orElse(30000);
-
-        Future<?> shutDownGracefully = bossGroup.shutdownGracefully(2,
-                stopTimeOutSeconds, TimeUnit.SECONDS);
-
+        // 2. waiting for all channel finish worker queues
         serviceDefinitionMap.values().forEach(ServerServiceDefinition::destroy);
 
-        shutDownGracefully.awaitUninterruptibly();
-        log.info("waiting for stop time out :{}", stopTimeOutSeconds);
+        // 3. await for use worker thread to process requests
+        Future<?> workerGroupShutDownedGracefully = workerGroup.shutdownGracefully();
+        Future<?> bossGroupShutDownedGracefully = bossGroup.shutdownGracefully();
+
+        Integer stopTimeOutSeconds = Optional.of(RpcRunTimeContext.stopTimeOut()).orElse(3);
+
+        log.info("worker threads process done {}",
+                workerGroupShutDownedGracefully.awaitUninterruptibly(stopTimeOutSeconds,
+                        TimeUnit.SECONDS));
+        bossGroupShutDownedGracefully.awaitUninterruptibly();
+        log.info("Netty Rpc Server shut down");
 
     }
 }

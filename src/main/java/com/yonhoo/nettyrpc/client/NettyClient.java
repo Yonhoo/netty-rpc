@@ -29,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,6 +37,8 @@ import lombok.extern.slf4j.Slf4j;
 public class NettyClient {
     private Bootstrap bootstrap;
     private EventLoopGroup eventLoopGroup;
+
+    private AtomicInteger atomicInteger = new AtomicInteger(0);
     private final NettyRpcClientHandler nettyRpcClientHandler = new NettyRpcClientHandler();
 
     public NettyClient(String host, int port) {
@@ -112,7 +115,8 @@ public class NettyClient {
             try {
                 RpcMessage rpcMessage = RpcMessage.builder()
                         .messageType(RpcConstants.REQUEST_TYPE)
-                        .requestId(1)
+                        //TODO use UUID
+                        .requestId(atomicInteger.getAndIncrement())
                         .codec(RpcConstants.PROTOCOL_DEFAULT_TYPE)
                         .compress(CompressTypeEnum.NONE.getCode())
                         .data(request)

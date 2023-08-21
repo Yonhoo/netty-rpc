@@ -6,12 +6,17 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.ObjectUtil;
+
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -59,6 +64,10 @@ public class Connection {
             this.referenceCount.decrementAndGet();
         }
         return result;
+    }
+
+    public List<CompletableFuture<RpcResponse>> getInvokeFutures() {
+        return new ArrayList<>(invokeFutureMap.values());
     }
 
     public void close() {

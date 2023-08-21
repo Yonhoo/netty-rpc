@@ -15,6 +15,6 @@ public interface ServerBuilder {
     ServerBuilder bizPoolConfig(int corePoolSize, int maximumPoolSize, long keepAliveTime);
 
     ServerBuilder bizPoolConfig(int corePoolSize, int maximumPoolSize, long keepAliveTime,
-                                    int queueSize);
+                                int queueSize);
 
 }

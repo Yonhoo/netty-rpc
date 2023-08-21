@@ -1,17 +1,13 @@
 package com.yonhoo.nettyrpc.server;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.URI;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.jni.Address;
-import org.apache.tomcat.jni.Socket;
 
 @Slf4j
 @Getter

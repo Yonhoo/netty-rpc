@@ -1,4 +1,4 @@
-package com.yonhoo.nettyrpc.hello_world_with_registry.client_consumer;
+package com.yonhoo.nettyrpc.hello_world_with_registry.client_base;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
