@@ -182,6 +182,7 @@ public class ZookeeperRegistry implements Registry, Destroyable {
     @Override
     public void unSubscribe(ConsumerConfig config) {
         checkZkClient();
+        log.info("unSubscribe consumer {}", config.getConsumerInterface());
 
         providerObserver.removeProviderListener(config);
         CuratorCache childCache = INTERFACE_PROVIDER_CACHE.remove(config);

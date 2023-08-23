@@ -10,9 +10,11 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.ObjectUtil;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.Callable;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -196,6 +198,19 @@ public class BasePool {
             }
 
             connection.close();
+        }
+    }
+
+    public void closeAwait() {
+        while (true) {
+            Connection connection = this.pollConnection();
+            if (connection.getReferenceCount() > 0) {
+
+                connectionDequeue.offer(connection);
+            } else if (connectionDequeue.isEmpty()) {
+                connection.closeChannel();
+                return;
+            }
         }
     }
 

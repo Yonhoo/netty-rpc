@@ -1,18 +1,23 @@
 package com.yonhoo.nettyrpc.client;
 
 import com.yonhoo.nettyrpc.common.ApplicationContextUtil;
+import com.yonhoo.nettyrpc.connection.ClientConnectionManager;
+import com.yonhoo.nettyrpc.connection.DefaultClientConnectionManager;
 import com.yonhoo.nettyrpc.exception.RpcErrorCode;
 import com.yonhoo.nettyrpc.exception.RpcException;
 import com.yonhoo.nettyrpc.registry.ConsumerConfig;
 import com.yonhoo.nettyrpc.registry.DefaultProviderInfoListener;
 import com.yonhoo.nettyrpc.registry.Registry;
 import com.yonhoo.nettyrpc.registry.ZookeeperRegistry;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class DefaultConsumerBootstrap<T> {
     private final ConsumerConfig consumerConfig;
     private InvokerBroker invokerBroker;
@@ -25,11 +30,7 @@ public class DefaultConsumerBootstrap<T> {
     }
 
     static {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            consumerInvokers.values().forEach(InvokerBroker::destroy);
-            Registry registry = ApplicationContextUtil.getBean(ZookeeperRegistry.class);
-            registry.destroy();
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(DefaultConsumerBootstrap::close));
     }
 
     public T refer() throws Exception {
@@ -66,5 +67,24 @@ public class DefaultConsumerBootstrap<T> {
             return proxyInvoker;
         }
 
+    }
+
+    public static void close() {
+        // 1. close consumer invokers
+        consumerInvokers.values().forEach(InvokerBroker::destroy);
+
+        // 2. close connection manager & netty client
+        DefaultClientConnectionManager clientConnectionManager = ApplicationContextUtil
+                .getBean(DefaultClientConnectionManager.class);
+
+        Optional.ofNullable(clientConnectionManager).ifPresent(ClientConnectionManager::close);
+
+        // 3. close registry
+        Registry registry = ApplicationContextUtil.getBean(ZookeeperRegistry.class);
+        Optional.ofNullable(registry).ifPresent(Registry::destroy);
+
+        //TODO need enhance
+        // 4. remove provider infos
+        consumerInvokers.forEach((key, value) -> value.clearProviderInfos());
     }
 }

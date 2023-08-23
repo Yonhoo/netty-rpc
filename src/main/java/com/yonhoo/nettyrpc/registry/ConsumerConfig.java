@@ -1,6 +1,7 @@
 package com.yonhoo.nettyrpc.registry;
 
 import com.yonhoo.nettyrpc.client.DefaultConsumerBootstrap;
+import com.yonhoo.nettyrpc.common.ApplicationContextUtil;
 import lombok.Getter;
 import lombok.Setter;
 

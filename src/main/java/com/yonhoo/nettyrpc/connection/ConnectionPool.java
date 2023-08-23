@@ -8,12 +8,14 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.ObjectUtil;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -151,6 +153,37 @@ public class ConnectionPool {
         }
     }
 
+    /**
+     * close await for all connections in channel already completed
+     */
+    public void closeAwait() {
+        try {
+            if (this.executor.inEventLoop()) {
+                this.close1().await();
+            } else {
+                final Promise<Void> closeComplete = this.executor.newPromise();
+                this.executor.execute(new Runnable() {
+                    public void run() {
+                        close1().addListener(new FutureListener<Void>() {
+                            public void operationComplete(Future<Void> f) throws Exception {
+                                if (f.isSuccess()) {
+                                    closeComplete.setSuccess(null);
+                                } else {
+                                    closeComplete.setFailure(f.cause());
+                                }
+
+                            }
+                        });
+                    }
+                });
+                closeComplete.await();
+            }
+        } catch (InterruptedException var2) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(var2);
+        }
+    }
+
     public Future<Void> closeAsync() {
         if (this.executor.inEventLoop()) {
             return this.close0();
@@ -174,6 +207,11 @@ public class ConnectionPool {
         }
     }
 
+    /**
+     * close all connections directly with error response
+     *
+     * @return future
+     */
     private Future<Void> close0() {
         assert this.executor.inEventLoop();
 
@@ -193,6 +231,32 @@ public class ConnectionPool {
             return GlobalEventExecutor.INSTANCE.newSucceededFuture(null);
         }
     }
+
+    /**
+     * close all connections until complete
+     *
+     * @return future
+     */
+    private Future<Void> close1() {
+        assert this.executor.inEventLoop();
+
+        if (!this.closed) {
+            this.closed = true;
+
+            this.acquiredChannelCount.set(0);
+
+            return GlobalEventExecutor.INSTANCE.submit(new Callable<Void>() {
+                public Void call() throws Exception {
+                    urlPoolMap.values().forEach(BasePool::closeAwait);
+                    return null;
+                }
+            });
+
+        }
+
+        return null;
+    }
+
 
     private static final class AcquireTimeoutException extends TimeoutException {
         private AcquireTimeoutException() {

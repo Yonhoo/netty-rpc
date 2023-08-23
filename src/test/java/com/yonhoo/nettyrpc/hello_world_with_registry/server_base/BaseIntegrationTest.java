@@ -1,4 +1,4 @@
-package com.yonhoo.nettyrpc.hello_world_with_registry.server_provider;
+package com.yonhoo.nettyrpc.hello_world_with_registry.server_base;
 
 import com.yonhoo.nettyrpc.registry.base.BaseZkTest;
 import org.junit.jupiter.api.extension.ExtendWith;

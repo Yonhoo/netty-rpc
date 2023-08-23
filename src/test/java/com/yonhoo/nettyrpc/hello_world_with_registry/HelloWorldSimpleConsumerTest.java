@@ -1,7 +1,8 @@
-package com.yonhoo.nettyrpc.hello_world_with_registry.client_base;
+package com.yonhoo.nettyrpc.hello_world_with_registry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.yonhoo.nettyrpc.hello_world_with_registry.client_base.BaseIntegrationTest;
 import com.yonhoo.nettyrpc.helloworld.HelloWorld;
 import com.yonhoo.nettyrpc.registry.ConsumerConfig;
 import org.junit.jupiter.api.Test;

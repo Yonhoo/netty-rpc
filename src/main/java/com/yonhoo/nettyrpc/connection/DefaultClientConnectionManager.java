@@ -5,8 +5,10 @@ import com.yonhoo.nettyrpc.common.Url;
 import com.yonhoo.nettyrpc.exception.RpcException;
 import io.netty.util.concurrent.Future;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 @Slf4j
+@Service
 public class DefaultClientConnectionManager implements ClientConnectionManager {
     private final ConnectionPool connectionPool;
     private static final NettyClient nettyClient = new NettyClient();
@@ -27,7 +29,8 @@ public class DefaultClientConnectionManager implements ClientConnectionManager {
 
     @Override
     public void close() {
-        connectionPool.close();
+        log.info("connection manager start close");
+        connectionPool.closeAwait();
         nettyClient.close();
     }
 }

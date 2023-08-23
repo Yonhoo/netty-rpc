@@ -12,10 +12,7 @@ import com.yonhoo.nettyrpc.protocol.RpcMessageEncoder;
 import com.yonhoo.nettyrpc.protocol.RpcRequest;
 import com.yonhoo.nettyrpc.protocol.RpcResponse;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -150,6 +147,8 @@ public class NettyClient {
             throw RpcException.with(RpcErrorCode.RPC_CHANNEL_IS_NOT_ACTIVE);
         }
     }
+
+    //TODO add async invoke
 
     public Object syncInvoke(RpcRequest request, int timeout) {
         return null;

@@ -40,6 +40,9 @@ public class InvokerBroker implements ProviderInfoListener, Destroyable {
     }
 
     public Object doInvoke(RpcRequest request) {
+        if (providerInfos.isEmpty()) {
+            // FixMe
+        }
         InvokeContext invokeContext = new InvokeContext();
 
         //load balancer
@@ -49,6 +52,9 @@ public class InvokerBroker implements ProviderInfoListener, Destroyable {
         return defaultClientTransport.doSend(request, invokeContext);
     }
 
+    public void clearProviderInfos() {
+        providerInfos.clear();
+    }
 
     public ConsumerConfig getConsumerConfig() {
         return consumerConfig;

@@ -1,5 +1,7 @@
 package com.yonhoo.nettyrpc.connection;
 
+import com.yonhoo.nettyrpc.exception.RpcErrorCode;
+import com.yonhoo.nettyrpc.exception.RpcException;
 import com.yonhoo.nettyrpc.protocol.RpcResponse;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -39,7 +41,7 @@ public class Connection {
     }
 
     public boolean isFine() {
-        return this.channel != null && this.channel.isActive() && this.channel.isWritable();
+        return !closed.get() && this.channel != null && this.channel.isActive() && this.channel.isWritable();
     }
 
     public Boolean inEventLoop() {
@@ -51,6 +53,9 @@ public class Connection {
     }
 
     public CompletableFuture<RpcResponse> addInvokeFuture(Integer invokeId, CompletableFuture<RpcResponse> future) {
+        if (!isFine()) {
+            throw RpcException.with(RpcErrorCode.RPC_CHANNEL_IS_NOT_ACTIVE);
+        }
         CompletableFuture<RpcResponse> origin = this.invokeFutureMap.putIfAbsent(invokeId, future);
         if (origin == null) {
             this.referenceCount.incrementAndGet();
@@ -66,8 +71,28 @@ public class Connection {
         return result;
     }
 
-    public List<CompletableFuture<RpcResponse>> getInvokeFutures() {
-        return new ArrayList<>(invokeFutureMap.values());
+    public Integer getReferenceCount() {
+        return referenceCount.get();
+    }
+
+    public void closeChannel() {
+        try {
+            if (!closed.get() && this.channel != null && referenceCount.get() == 0) {
+                closed.compareAndSet(false, true);
+                this.channel.close().addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        log.info("Close the connection to remote address={}, result={}, cause={}",
+                                Connection.this.channel.remoteAddress(), future.isSuccess(), future.cause());
+
+                    }
+
+                });
+            }
+        } catch (Exception e) {
+            log.warn("Exception caught when closing connection {}",
+                    Connection.this.channel.remoteAddress(), e);
+        }
     }
 
     public void close() {

@@ -1,10 +1,8 @@
-package com.yonhoo.nettyrpc.hello_world_with_registry.server_provider;
+package com.yonhoo.nettyrpc.hello_world_with_registry.server_base;
 
-import static org.assertj.core.api.Assertions.assertThat;
 
 import com.yonhoo.nettyrpc.helloworld.HelloWorld;
 import com.yonhoo.nettyrpc.helloworld.HelloWorldImpl;
-import com.yonhoo.nettyrpc.registry.ConsumerConfig;
 import com.yonhoo.nettyrpc.server.NettyServer;
 import com.yonhoo.nettyrpc.server.NettyServerBuilder;
 import com.yonhoo.nettyrpc.server.ServerServiceDefinition;
