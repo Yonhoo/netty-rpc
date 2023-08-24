@@ -1,5 +1,5 @@
 name: Code Coverage
-on: [create, pull_request]
+on: [push, pull_request]
 jobs:
   run_codecov:
     name: Upload coverage reports to Codecov
