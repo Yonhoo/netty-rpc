@@ -1,7 +1,5 @@
 name: Code Coverage
-on:
-  schedule:
-    - cron: "0 2 * * *"
+on: [create, pull_request]
 jobs:
   run_codecov:
     name: Upload coverage reports to Codecov
