@@ -1,21 +1,17 @@
 package com.yonhoo.nettyrpc.registry;
 
 import com.yonhoo.nettyrpc.common.RpcConstants;
-import java.net.URLDecoder;
+
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
+
+import com.yonhoo.nettyrpc.util.RegistryUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.logging.log4j.util.Strings;
 
 @Slf4j
 public class ZookeeperProviderObserver {
@@ -49,7 +45,7 @@ public class ZookeeperProviderObserver {
     }
 
     private ProviderInfo buildProviderInfoByBytes(ChildData data, String rootPath, String servicePath) {
-        Map<String, String> dataMap = buildStringMapFromBytes(data);
+        Map<String, String> dataMap = RegistryUtils.buildStringMapFromBytes(data);
         String portWithAddressStr = servicePath.substring(servicePath.indexOf(PROVIDERS) +
                 PROVIDERS.length() + 1);
 
@@ -63,21 +59,6 @@ public class ZookeeperProviderObserver {
                 .providerName(dataMap.getOrDefault(RpcConstants.PROVIDER_NAME, null))
                 .weight(Double.parseDouble(dataMap.getOrDefault(RpcConstants.SERVICE_WEIGHT, "0.0")))
                 .build();
-    }
-
-    private Map<String, String> buildStringMapFromBytes(ChildData data) {
-        if (Objects.isNull(data.getData())) {
-            return Collections.emptyMap();
-        }
-
-        String dataStr = new String(data.getData());
-        return Arrays.stream(URLDecoder.decode(dataStr, StandardCharsets.UTF_8).split("&"))
-                .filter(Strings::isNotBlank)
-                .map(item -> {
-                    String[] keyAndValue = item.split("=");
-                    return Pair.of(keyAndValue[0], keyAndValue[1]);
-                })
-                .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
     }
 
     private void notifyListenerForUpdate(ProviderInfo providerInfo) {

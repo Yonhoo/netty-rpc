@@ -2,14 +2,19 @@ package com.yonhoo.nettyrpc.registry;
 
 
 import com.yonhoo.nettyrpc.common.Destroyable;
+import com.yonhoo.nettyrpc.common.RpcConstants;
 import com.yonhoo.nettyrpc.config.RegistryPropertiesConfig;
 import com.yonhoo.nettyrpc.exception.RpcErrorCode;
 import com.yonhoo.nettyrpc.exception.RpcException;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
+import com.yonhoo.nettyrpc.util.RegistryUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -183,11 +188,34 @@ public class ZookeeperRegistry implements Registry, Destroyable {
     public void unSubscribe(ConsumerConfig config) {
         checkZkClient();
         log.info("unSubscribe consumer {}", config.getConsumerInterface());
-
         providerObserver.removeProviderListener(config);
         CuratorCache childCache = INTERFACE_PROVIDER_CACHE.remove(config);
         if (childCache != null) {
             try {
+                List<ProviderInfo> providerInfos = childCache.stream()
+                        .filter(childData -> !RegistryUtils.isRootPath(childData.getPath()))
+                        .map(childData -> {
+                            String providerPath = RegistryUtils.getProviderPath(childData.getPath());
+                            String rootPath = RegistryUtils.getRootPath(childData.getPath());
+                            String[] portWithAddress = providerPath.split(":");
+                            Map<String, String> dataMap = RegistryUtils.buildStringMapFromBytes(childData);
+
+                            return ProviderInfo.builder()
+                                    .rootPath(rootPath)
+                                    .servicePath(childData.getPath())
+                                    .port(Integer.valueOf(portWithAddress[1]))
+                                    .address(portWithAddress[0])
+                                    .weight(Double.parseDouble(dataMap.getOrDefault(RpcConstants.SERVICE_WEIGHT, "0.0")))
+                                    .providerName(dataMap.getOrDefault(RpcConstants.PROVIDER_NAME, null))
+                                    .build();
+                        })
+                        .collect(Collectors.toList());
+
+                providerInfos.stream().forEach(providerInfo -> {
+                    log.info("remove provider {}", providerInfo);
+                    config.getProviderInfoListener().removeProvider(providerInfo);
+                });
+
                 childCache.close();
             } catch (Exception e) {
                 log.error("unsubscribe consumer config : {}", e);
@@ -200,13 +228,8 @@ public class ZookeeperRegistry implements Registry, Destroyable {
     @Override
     public void destroy() {
         if (zkClient != null && zkClient.getState() == CuratorFrameworkState.STARTED) {
-            INTERFACE_PROVIDER_CACHE.forEach((consumerConfig, curatorCache) -> {
-                try {
-                    curatorCache.close();
-                } catch (Exception e) {
-                    log.warn("close zookeeper client connection {} error ", consumerConfig, e);
-                }
-            });
+            INTERFACE_PROVIDER_CACHE.forEach((consumerConfig, curatorCache) ->
+                    unSubscribe(consumerConfig));
 
             INTERFACE_PROVIDER_CACHE.clear();
 
@@ -219,6 +242,8 @@ public class ZookeeperRegistry implements Registry, Destroyable {
                     log.warn("delete service path error {}", servicePath, e);
                 }
             });
+
+            SERVICE_PATHS.clear();
 
             zkClient.close();
         }

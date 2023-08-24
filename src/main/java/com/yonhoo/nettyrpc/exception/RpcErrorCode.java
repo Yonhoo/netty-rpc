@@ -11,7 +11,8 @@ public enum RpcErrorCode {
     REGISTRY_CLIENT_START_EXCEPTION("10008", "registry client start exception"),
     REGISTRY_CLIENT_UNAVAILABLE("10009", "registry client unavailable"),
     REGISTRY_UNSUBSCRIBE_EXCEPTION("10010", "registry client unsubscribe exception"),
-    SERVICE_IS_EMPTY("10011", "service list is empty");
+    SERVICE_IS_EMPTY("10011", "service list is empty"),
+    NO_PROVIDER_PATH("10012", "service no provider path");
 
     private final String code;
     private final String message;

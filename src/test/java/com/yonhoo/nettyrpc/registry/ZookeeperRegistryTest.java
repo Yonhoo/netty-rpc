@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.yonhoo.nettyrpc.config.RegistryPropertiesConfig;
 import com.yonhoo.nettyrpc.helloworld.HelloWorld;
 import com.yonhoo.nettyrpc.registry.base.BaseZkTest;
+
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,20 +13,21 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.logging.log4j.util.Strings;
 import org.apache.zookeeper.data.Stat;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @Slf4j
 public class ZookeeperRegistryTest extends BaseZkTest {
     private static ZookeeperRegistry zookeeperRegistry;
 
-    @BeforeAll
-    static void setUp() {
+    @BeforeEach
+    void setUp() {
         RegistryPropertiesConfig propertiesConfig = new RegistryPropertiesConfig();
         propertiesConfig.setAddress("127.0.0.1");
         propertiesConfig.setApplication("test-application");
@@ -38,10 +40,14 @@ public class ZookeeperRegistryTest extends BaseZkTest {
     void tearUp() throws Exception {
         String providerPath = ZookeeperRegistryHelper.buildProviderPath("test-application/",
                 HelloWorld.class.getSimpleName());
-        zookeeperRegistry.getZkClient()
-                .delete()
-                .deletingChildrenIfNeeded()
-                .forPath(providerPath);
+        try {
+            zookeeperRegistry.getZkClient()
+                    .delete()
+                    .deletingChildrenIfNeeded()
+                    .forPath(providerPath);
+        } catch (Exception e) {
+            //ignore
+        }
     }
 
     @Test
@@ -98,7 +104,7 @@ public class ZookeeperRegistryTest extends BaseZkTest {
     }
 
     @Test
-    void should_delete_provider_service_when_call_unregistry_given_provider_service_config() throws Exception {
+    void should_delete_provider_service_when_call_unregister_given_provider_service_config() throws Exception {
         //given
         ServiceConfig serviceConfig1 = ServiceConfig.builder()
                 .ip("127.0.0.1")
@@ -235,6 +241,95 @@ public class ZookeeperRegistryTest extends BaseZkTest {
         assertThat(providerInfos).hasSize(1);
         assertThat(providerInfos.get(0).getServicePath()).isEqualTo(providerPath + "/" + serviceConfig1.getUrl());
 
+    }
+
+    @Test
+    void should_clear_all_server_side_registry_when_call_destroy_given_server_side_zk_client() throws Exception {
+        //given
+        ServiceConfig serviceConfig1 = ServiceConfig.builder()
+                .ip("127.0.0.1")
+                .port(13453)
+                .weight(0.3)
+                .build();
+
+        ServiceConfig serviceConfig2 = ServiceConfig.builder()
+                .ip("127.0.0.1")
+                .port(13454)
+                .weight(0.7)
+                .build();
+
+        ProviderConfig providerConfig = ProviderConfig.builder()
+                .providerName(HelloWorld.class.getSimpleName())
+                .serviceConfigList(List.of(serviceConfig1, serviceConfig2))
+                .build();
+
+        zookeeperRegistry.registry(providerConfig);
+
+        String providerPath = ZookeeperRegistryHelper.buildProviderPath("test-application/",
+                providerConfig.getProviderName());
+
+        CuratorFramework zkClient = zookeeperRegistry.getZkClient();
+
+        List<String> providerPaths = new ArrayList<>(zkClient.getChildren().forPath(providerPath));
+
+        //when
+        zookeeperRegistry.destroy();
+
+        //then
+        assertThat(providerPaths).hasSize(2);
+        assertThat(providerPaths.get(0)).isEqualTo("127.0.0.1" + ":13454");
+        assertThat(providerPaths.get(1)).isEqualTo("127.0.0.1" + ":13453");
+        RegistryPropertiesConfig propertiesConfig = new RegistryPropertiesConfig();
+        propertiesConfig.setAddress("127.0.0.1");
+        propertiesConfig.setApplication("test-application");
+        propertiesConfig.setPort(2181);
+
+        zookeeperRegistry = new ZookeeperRegistry(propertiesConfig);
+        List<String> childPaths = new ArrayList<>(zookeeperRegistry.getZkClient().getChildren().forPath(providerPath));
+
+        assertThat(childPaths).isEmpty();
+
+    }
+
+    @Test
+    void should_clear_all_client_side_subscribe_when_call_destroy_given_client_side_zk_client() throws Exception {
+        //given
+        ServiceConfig serviceConfig1 = ServiceConfig.builder()
+                .ip("127.0.0.1")
+                .port(13453)
+                .weight(0.3)
+                .build();
+
+        ServiceConfig serviceConfig2 = ServiceConfig.builder()
+                .ip("127.0.0.1")
+                .port(13454)
+                .weight(0.7)
+                .build();
+
+        ProviderConfig providerConfig = ProviderConfig.builder()
+                .providerName(HelloWorld.class.getSimpleName())
+                .serviceConfigList(List.of(serviceConfig1, serviceConfig2))
+                .build();
+
+        zookeeperRegistry.registry(providerConfig);
+
+        ConsumerConfig config = new ConsumerConfig(HelloWorld.class.getSimpleName(), 300000, "async");
+
+        TestProviderInfoListener testProviderInfoListener = new TestProviderInfoListener(2);
+        config.setProviderInfoListener(testProviderInfoListener);
+
+        zookeeperRegistry.subscribe(config);
+
+        testProviderInfoListener.getLatch().await();
+
+        List<ProviderInfo> providerInfos = new ArrayList<>(testProviderInfoListener.providerInfos.values());
+
+        //when
+        zookeeperRegistry.destroy();
+
+        //then
+        assertThat(providerInfos).hasSize(2);
+        assertThat(testProviderInfoListener.providerInfos.values()).isEmpty();
     }
 
     private class TestProviderInfoListener implements ProviderInfoListener {
