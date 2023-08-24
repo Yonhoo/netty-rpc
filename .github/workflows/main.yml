@@ -1,4 +1,4 @@
-name: Flomo Reminder
+name: Code Coverage
 on:
   schedule:
     - cron: "0 2 * * *"
