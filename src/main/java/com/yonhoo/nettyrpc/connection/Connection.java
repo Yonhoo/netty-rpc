@@ -6,6 +6,7 @@ import com.yonhoo.nettyrpc.protocol.RpcResponse;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.ObjectUtil;
 
@@ -33,7 +34,8 @@ public class Connection {
 
     public Connection(Channel channel) {
         this.channel = ObjectUtil.checkNotNull(channel, "channel not be null");
-        this.channel.attr(CONNECTION).set(this);
+        Attribute<Connection> attr = this.channel.attr(CONNECTION);
+        //.set(this);
     }
 
     public Channel getChannel() {

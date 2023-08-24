@@ -205,7 +205,6 @@ public class BasePool {
         while (true) {
             Connection connection = this.pollConnection();
             if (connection.getReferenceCount() > 0) {
-
                 connectionDequeue.offer(connection);
             } else if (connectionDequeue.isEmpty()) {
                 connection.closeChannel();
