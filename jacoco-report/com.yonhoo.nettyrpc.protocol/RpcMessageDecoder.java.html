@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RpcMessageDecoder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">netty-rpc</a> &gt; <a href="index.source.html" class="el_package">com.yonhoo.nettyrpc.protocol</a> &gt; <span class="el_source">RpcMessageDecoder.java</span></div><h1>RpcMessageDecoder.java</h1><pre class="source lang-java linenums">package com.yonhoo.nettyrpc.protocol;
+
+import com.yonhoo.nettyrpc.common.RpcConstants;
+import com.yonhoo.nettyrpc.serialize.ProtostuffSerializer;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledHeapByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
+import lombok.extern.slf4j.Slf4j;
+
+<span class="fc" id="L16">@Slf4j</span>
+public class RpcMessageDecoder extends LengthFieldBasedFrameDecoder {
+    public RpcMessageDecoder() {
+<span class="fc" id="L19">        this(Integer.MAX_VALUE, 0, 4, -4, 0);</span>
+<span class="fc" id="L20">    }</span>
+
+    /**
+     * @param maxFrameLength      Maximum frame length. It decide the maximum length of data that can be received.
+     *                            If it exceeds, the data will be discarded.
+     * @param lengthFieldOffset   Length field offset. The length field is the one that skips the specified length of byte.
+     * @param lengthFieldLength   The number of bytes in the length field.
+     * @param lengthAdjustment    The compensation value to add to the value of the length field
+     * @param initialBytesToStrip Number of bytes skipped.
+     *                            If you need to receive all of the header+body data, this value is 0
+     *                            if you only want to receive the body data, then you need to skip the number of bytes consumed by the header.
+     */
+    public RpcMessageDecoder(int maxFrameLength, int lengthFieldOffset, int lengthFieldLength,
+                             int lengthAdjustment, int initialBytesToStrip) {
+<span class="fc" id="L34">        super(maxFrameLength, lengthFieldOffset, lengthFieldLength, lengthAdjustment, initialBytesToStrip);</span>
+<span class="fc" id="L35">    }</span>
+
+    @Override
+    protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
+<span class="fc" id="L39">        Object decoded = super.decode(ctx, in);</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">        if (decoded instanceof ByteBuf) {</span>
+<span class="fc" id="L41">            ByteBuf frame = (ByteBuf) decoded;</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">            if (frame.readableBytes() &gt;= RpcConstants.TOTAL_LENGTH) {</span>
+<span class="fc" id="L43">                return decodeFrame(frame);</span>
+            } else {
+<span class="nc" id="L45">                throw new RuntimeException(&quot;read in data total length less than 16 bytes&quot;);</span>
+            }
+        }
+<span class="nc" id="L48">        return decoded;</span>
+    }
+
+    private Object decodeFrame(ByteBuf in) {
+        // note: must read ByteBuf in order
+<span class="fc" id="L53">        int fullLength = in.readInt();</span>
+<span class="fc" id="L54">        checkMagicNumber(in);</span>
+<span class="fc" id="L55">        checkVersion(in);</span>
+
+        // build RpcMessage object
+<span class="fc" id="L58">        byte messageType = in.readByte();</span>
+<span class="fc" id="L59">        byte codecType = in.readByte();</span>
+<span class="fc" id="L60">        byte compressType = in.readByte();</span>
+<span class="fc" id="L61">        int requestId = in.readInt();</span>
+<span class="fc" id="L62">        RpcMessage.RpcMessageBuilder rpcMessageBuilder = RpcMessage.builder()</span>
+<span class="fc" id="L63">                .codec(codecType)</span>
+<span class="fc" id="L64">                .requestId(requestId)</span>
+<span class="fc" id="L65">                .messageType(messageType);</span>
+
+<span class="fc" id="L67">        int bodyLength = fullLength - RpcConstants.HEAD_LENGTH;</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (bodyLength &gt; 0) {</span>
+<span class="fc" id="L69">            byte[] bs = new byte[bodyLength];</span>
+<span class="fc" id="L70">            in.readBytes(bs);</span>
+            // decompress the bytes
+//            String compressName = CompressTypeEnum.getName(compressType);
+//            Compress compress = ExtensionLoader.getExtensionLoader(Compress.class)
+//                    .getExtension(compressName);
+//            bs = compress.decompress(bs);
+            // deserialize the object , default protocol buff
+<span class="fc" id="L77">            ProtostuffSerializer serializer = new ProtostuffSerializer();</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">            if (messageType == RpcConstants.REQUEST_TYPE) {</span>
+<span class="fc" id="L79">                RpcRequest tmpValue = serializer.deserialize(bs, RpcRequest.class);</span>
+<span class="fc" id="L80">                rpcMessageBuilder.data(tmpValue);</span>
+<span class="fc" id="L81">            } else {</span>
+<span class="fc" id="L82">                RpcResponse tmpValue = serializer.deserialize(bs, RpcResponse.class);</span>
+<span class="fc" id="L83">                rpcMessageBuilder.data(tmpValue);</span>
+            }
+        }
+<span class="fc" id="L86">        return rpcMessageBuilder.build();</span>
+
+    }
+
+    private void checkVersion(ByteBuf in) {
+        // read the version and compare
+<span class="fc" id="L92">        byte version = in.readByte();</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        if (version != RpcConstants.VERSION) {</span>
+<span class="nc" id="L94">            throw new RuntimeException(&quot;version isn't compatible&quot; + version);</span>
+        }
+<span class="fc" id="L96">    }</span>
+
+    private void checkMagicNumber(ByteBuf in) {
+        // read the first 4 bit, which is the magic number, and compare
+<span class="fc" id="L100">        int len = RpcConstants.MAGIC_NUMBER.length;</span>
+<span class="fc" id="L101">        byte[] tmp = new byte[len];</span>
+<span class="fc" id="L102">        in.readBytes(tmp);</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        for (int i = 0; i &lt; len; i++) {</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">            if (tmp[i] != RpcConstants.MAGIC_NUMBER[i]) {</span>
+<span class="nc" id="L105">                throw new IllegalArgumentException(&quot;Unknown magic code: &quot; + Arrays.toString(tmp));</span>
+            }
+        }
+<span class="fc" id="L108">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

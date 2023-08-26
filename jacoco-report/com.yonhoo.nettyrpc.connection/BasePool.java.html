@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BasePool.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">netty-rpc</a> &gt; <a href="index.source.html" class="el_package">com.yonhoo.nettyrpc.connection</a> &gt; <span class="el_source">BasePool.java</span></div><h1>BasePool.java</h1><pre class="source lang-java linenums">package com.yonhoo.nettyrpc.connection;
+
+import com.yonhoo.nettyrpc.common.Url;
+import com.yonhoo.nettyrpc.exception.RpcException;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.pool.ChannelHealthChecker;
+import io.netty.channel.pool.ChannelPoolHandler;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.concurrent.Promise;
+import io.netty.util.internal.ObjectUtil;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.concurrent.Callable;
+
+import lombok.extern.slf4j.Slf4j;
+
+<span class="pc bpc" id="L20" title="1 of 2 branches missed.">@Slf4j</span>
+public class BasePool {
+    //FIFO
+    private final Deque&lt;Connection&gt; connectionDequeue;
+    private final ChannelPoolHandler handler;
+    private final ChannelHealthChecker healthCheck;
+    private final Bootstrap bootstrap;
+    private final ConnectionFactory connectionFactory;
+    private final int poolSize;
+    private final Url url;
+
+    public BasePool(Bootstrap bootstrap, ChannelPoolHandler handler, int poolSize, Url url) {
+<span class="fc" id="L32">        this(bootstrap, handler, ChannelHealthChecker.ACTIVE, poolSize, url);</span>
+<span class="fc" id="L33">    }</span>
+
+    public BasePool(Bootstrap bootstrap, ChannelPoolHandler handler,
+<span class="fc" id="L36">                    ChannelHealthChecker healthCheck, int poolSize, Url url) {</span>
+<span class="fc" id="L37">        this.poolSize = ObjectUtil.checkPositive(poolSize, &quot;pool size should be greater than 0&quot;);</span>
+<span class="fc" id="L38">        this.bootstrap = (ObjectUtil.checkNotNull(bootstrap, &quot;bootstrap&quot;)).clone();</span>
+<span class="fc" id="L39">        this.url = url;</span>
+<span class="fc" id="L40">        this.connectionFactory = new ConnectionFactory(this.bootstrap);</span>
+<span class="fc" id="L41">        this.connectionDequeue = new ArrayDeque&lt;&gt;();</span>
+<span class="fc" id="L42">        this.handler = ObjectUtil.checkNotNull(handler, &quot;handler&quot;);</span>
+<span class="fc" id="L43">        this.healthCheck = ObjectUtil.checkNotNull(healthCheck, &quot;healthCheck&quot;);</span>
+<span class="fc" id="L44">    }</span>
+
+    public void init() {
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (int i = 0; i &lt; poolSize; i++) {</span>
+            try {
+<span class="fc" id="L49">                Connection connection = connectionFactory.createConnection(url);</span>
+<span class="fc" id="L50">                connectionDequeue.addLast(connection);</span>
+<span class="nc" id="L51">            } catch (RpcException e) {</span>
+<span class="nc" id="L52">                log.warn(&quot;connection pool init connection error &quot;, e);</span>
+<span class="fc" id="L53">            }</span>
+        }
+<span class="fc" id="L55">    }</span>
+
+    public Future&lt;Connection&gt; acquire(Promise&lt;Connection&gt; promise) {
+<span class="fc" id="L58">        return acquireHealthyFromPoolOrNew(ObjectUtil.checkNotNull(promise, &quot;promise&quot;));</span>
+    }
+
+    private Future&lt;Connection&gt; acquireHealthyFromPoolOrNew(Promise&lt;Connection&gt; promise) {
+        try {
+<span class="fc" id="L63">            final Connection connection = this.pollConnection();</span>
+<span class="pc bpc" id="L64" title="3 of 4 branches missed.">            if (connection == null &amp;&amp; connectionDequeue.size() &lt; poolSize) {</span>
+<span class="nc" id="L65">                log.info(&quot;create new connection when acquire empty connection from poll&quot;);</span>
+<span class="nc" id="L66">                Connection newConnection = connectionFactory.createConnection(url);</span>
+<span class="nc bnc" id="L67" title="All 2 branches missed.">                if (newConnection.isFine()) {</span>
+<span class="nc" id="L68">                    this.notifyConnect(newConnection, promise);</span>
+                    // new connection offer into dequeue
+<span class="nc bnc" id="L70" title="All 2 branches missed.">                    if (promise.isSuccess()) {</span>
+<span class="nc" id="L71">                        connectionDequeue.offer(newConnection);</span>
+                    }
+                } else {
+<span class="nc" id="L74">                    newConnection.close();</span>
+<span class="nc" id="L75">                    return acquireHealthyFromPoolOrNew(promise);</span>
+                }
+<span class="nc" id="L77">            } else {</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">                if (connection.inEventLoop()) {</span>
+<span class="nc" id="L79">                    doHealthCheck(connection, promise);</span>
+                } else {
+<span class="fc" id="L81">                    connection.inEventLoopExecute(new Runnable() {</span>
+                        public void run() {
+<span class="fc" id="L83">                            doHealthCheck(connection, promise);</span>
+<span class="fc" id="L84">                        }</span>
+                    });
+                }
+<span class="fc" id="L87">                connectionDequeue.offer(connection);</span>
+            }
+<span class="nc" id="L89">        } catch (Throwable var5) {</span>
+<span class="nc" id="L90">            promise.tryFailure(var5);</span>
+<span class="fc" id="L91">        }</span>
+
+<span class="fc" id="L93">        return promise;</span>
+    }
+
+    private void notifyConnect(Connection connection, Promise&lt;Connection&gt; promise) {
+
+        try {
+<span class="nc" id="L99">            Channel channel = connection.getChannel();</span>
+<span class="nc" id="L100">            this.handler.channelAcquired(channel);</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            if (!promise.trySuccess(connection)) {</span>
+<span class="nc" id="L102">                this.release(connection);</span>
+            }
+<span class="nc" id="L104">        } catch (Throwable var5) {</span>
+<span class="nc" id="L105">            this.closeAndFail(connection, var5, promise);</span>
+<span class="nc" id="L106">        }</span>
+
+<span class="nc" id="L108">    }</span>
+
+    private void doHealthCheck(final Connection connection, final Promise&lt;Connection&gt; promise) {
+
+<span class="pc bpc" id="L112" title="2 of 4 branches missed.">        assert connection.inEventLoop();</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">        if (connection.isFine()) {</span>
+<span class="fc" id="L114">            promise.setSuccess(connection);</span>
+        } else {
+<span class="nc" id="L116">            connection.close();</span>
+<span class="nc" id="L117">            this.acquireHealthyFromPoolOrNew(promise);</span>
+        }
+<span class="fc" id="L119">    }</span>
+
+    public final Future&lt;Void&gt; release(Connection connection) {
+<span class="nc" id="L122">        return this.release(connection, connection.getChannel().eventLoop().newPromise());</span>
+    }
+
+    public Future&lt;Void&gt; release(final Connection connection, final Promise&lt;Void&gt; promise) {
+        try {
+<span class="nc" id="L127">            ObjectUtil.checkNotNull(connection, &quot;connection&quot;);</span>
+<span class="nc" id="L128">            ObjectUtil.checkNotNull(promise, &quot;promise&quot;);</span>
+<span class="nc bnc" id="L129" title="All 2 branches missed.">            if (connection.inEventLoop()) {</span>
+<span class="nc" id="L130">                this.doReleaseConnection(connection, promise);</span>
+            } else {
+<span class="nc" id="L132">                connection.inEventLoopExecute(() -&gt; BasePool.this.doReleaseConnection(connection, promise));</span>
+            }
+<span class="nc" id="L134">        } catch (Throwable var4) {</span>
+<span class="nc" id="L135">            this.closeAndFail(connection, var4, promise);</span>
+<span class="nc" id="L136">        }</span>
+
+<span class="nc" id="L138">        return promise;</span>
+    }
+
+    private void doReleaseConnection(Connection connection, Promise&lt;Void&gt; promise) {
+        try {
+<span class="nc bnc" id="L143" title="All 4 branches missed.">            assert connection.inEventLoop();</span>
+
+<span class="nc" id="L145">            this.doHealthCheckOnRelease(connection, promise);</span>
+<span class="nc" id="L146">        } catch (Throwable var4) {</span>
+<span class="nc" id="L147">            this.closeAndFail(connection, var4, promise);</span>
+<span class="nc" id="L148">        }</span>
+
+<span class="nc" id="L150">    }</span>
+
+    private void doHealthCheckOnRelease(final Connection connection, final Promise&lt;Void&gt; promise) throws Exception {
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        if (connection.isFine()) {</span>
+<span class="nc" id="L154">            this.releaseAndOfferIfHealthy(connection, promise);</span>
+        } else {
+<span class="nc" id="L156">            this.closeAndFail(connection, new RpcException(&quot;connection is inactive&quot;), promise);</span>
+<span class="nc" id="L157">            promise.setFailure(null);</span>
+        }
+
+<span class="nc" id="L160">    }</span>
+
+    private void releaseAndOfferIfHealthy(Connection connection, Promise&lt;Void&gt; promise) {
+        try {
+<span class="nc bnc" id="L164" title="All 2 branches missed.">            if (this.offerChannel(connection)) {</span>
+<span class="nc" id="L165">                this.handler.channelReleased(connection.getChannel());</span>
+<span class="nc" id="L166">                promise.setSuccess(null);</span>
+            }
+<span class="nc" id="L168">        } catch (Exception e) {</span>
+<span class="nc" id="L169">            this.closeAndFail(connection, new BasePool.ChannelPoolFullException(), promise);</span>
+<span class="nc" id="L170">        }</span>
+<span class="nc" id="L171">    }</span>
+
+    private void closeAndFail(Connection connection, Throwable cause, Promise&lt;?&gt; promise) {
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (connection != null) {</span>
+            try {
+<span class="nc" id="L176">                connection.close();</span>
+<span class="nc" id="L177">            } catch (Throwable var5) {</span>
+<span class="nc" id="L178">                promise.tryFailure(var5);</span>
+<span class="nc" id="L179">            }</span>
+        }
+
+<span class="nc" id="L182">        promise.tryFailure(cause);</span>
+<span class="nc" id="L183">    }</span>
+
+    private Connection pollConnection() {
+<span class="fc" id="L186">        return this.connectionDequeue.pollFirst();</span>
+    }
+
+    private boolean offerChannel(Connection channel) {
+<span class="nc" id="L190">        return this.connectionDequeue.offer(channel);</span>
+    }
+
+    public void close() {
+        while (true) {
+<span class="nc" id="L195">            Connection connection = this.pollConnection();</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">            if (connection == null) {</span>
+<span class="nc" id="L197">                return;</span>
+            }
+
+<span class="nc" id="L200">            connection.close();</span>
+<span class="nc" id="L201">        }</span>
+    }
+
+    public void closeAwait() {
+        while (true) {
+<span class="fc" id="L206">            Connection connection = this.pollConnection();</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">            if (connection.getReferenceCount() &gt; 0) {</span>
+<span class="fc" id="L208">                connectionDequeue.offer(connection);</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">            } else if (connectionDequeue.isEmpty()) {</span>
+<span class="fc" id="L210">                connection.closeChannel();</span>
+<span class="fc" id="L211">                return;</span>
+            }
+<span class="fc" id="L213">        }</span>
+    }
+
+    public Future&lt;Void&gt; closeAsync() {
+<span class="nc" id="L217">        return GlobalEventExecutor.INSTANCE.submit(new Callable&lt;Void&gt;() {</span>
+            public Void call() throws Exception {
+<span class="nc" id="L219">                BasePool.this.close();</span>
+<span class="nc" id="L220">                return null;</span>
+            }
+        });
+    }
+
+    private static final class ChannelPoolFullException extends IllegalStateException {
+        private ChannelPoolFullException() {
+<span class="nc" id="L227">            super(&quot;ChannelPool full&quot;);</span>
+<span class="nc" id="L228">        }</span>
+
+        public Throwable fillInStackTrace() {
+<span class="nc" id="L231">            return this;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

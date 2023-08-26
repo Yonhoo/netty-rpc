@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProtostuffSerializer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">netty-rpc</a> &gt; <a href="index.source.html" class="el_package">com.yonhoo.nettyrpc.serialize</a> &gt; <span class="el_source">ProtostuffSerializer.java</span></div><h1>ProtostuffSerializer.java</h1><pre class="source lang-java linenums">package com.yonhoo.nettyrpc.serialize;
+
+import io.protostuff.LinkedBuffer;
+import io.protostuff.ProtostuffIOUtil;
+import io.protostuff.Schema;
+import io.protostuff.runtime.RuntimeSchema;
+
+<span class="fc" id="L8">public class ProtostuffSerializer implements Serializer {</span>
+
+<span class="fc" id="L10">    private static final LinkedBuffer BUFFER = LinkedBuffer.allocate(LinkedBuffer.DEFAULT_BUFFER_SIZE);</span>
+
+    @Override
+    public byte[] serialize(Object obj) {
+<span class="fc" id="L14">        Class&lt;?&gt; clazz = obj.getClass();</span>
+<span class="fc" id="L15">        Schema schema = RuntimeSchema.getSchema(clazz);</span>
+        byte[] bytes;
+        try {
+<span class="fc" id="L18">            bytes = ProtostuffIOUtil.toByteArray(obj, schema, BUFFER);</span>
+        } finally {
+<span class="fc" id="L20">            BUFFER.clear();</span>
+        }
+<span class="fc" id="L22">        return bytes;</span>
+    }
+
+    @Override
+    public &lt;T&gt; T deserialize(byte[] bytes, Class&lt;T&gt; clazz) {
+<span class="fc" id="L27">        Schema&lt;T&gt; schema = RuntimeSchema.getSchema(clazz);</span>
+<span class="fc" id="L28">        T obj = schema.newMessage();</span>
+<span class="fc" id="L29">        ProtostuffIOUtil.mergeFrom(bytes, obj, schema);</span>
+<span class="fc" id="L30">        return obj;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

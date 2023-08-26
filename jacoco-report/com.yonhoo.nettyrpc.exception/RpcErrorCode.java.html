@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RpcErrorCode.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">netty-rpc</a> &gt; <a href="index.source.html" class="el_package">com.yonhoo.nettyrpc.exception</a> &gt; <span class="el_source">RpcErrorCode.java</span></div><h1>RpcErrorCode.java</h1><pre class="source lang-java linenums">package com.yonhoo.nettyrpc.exception;
+
+<span class="fc" id="L3">public enum RpcErrorCode {</span>
+<span class="fc" id="L4">    SERVICE_NOT_THIS_METHOD(&quot;10001&quot;, &quot;service not this method&quot;),</span>
+<span class="fc" id="L5">    CODEC_NOT_SUPPORTED_THIS_TYPE(&quot;10002&quot;, &quot;service codec type not supported&quot;),</span>
+<span class="fc" id="L6">    CHANNEL_READ_IS_NOT_REQUEST_TYPE(&quot;10003&quot;, &quot;service channel read request message type not supported&quot;),</span>
+<span class="fc" id="L7">    SERVICE_NOT_REGISTERED(&quot;10004&quot;, &quot;this service not registered&quot;),</span>
+<span class="fc" id="L8">    RPC_INVOKE_METHOD_ERROR(&quot;10005&quot;, &quot;invoke method error&quot;),</span>
+<span class="fc" id="L9">    RPC_CHANNEL_IS_NOT_ACTIVE(&quot;10006&quot;, &quot;connect channel is not active&quot;),</span>
+<span class="fc" id="L10">    RPC_MESSAGE_TYPE_NOT_BE_EMPTY(&quot;10007&quot;, &quot;rpc message type not be empty&quot;),</span>
+<span class="fc" id="L11">    REGISTRY_CLIENT_START_EXCEPTION(&quot;10008&quot;, &quot;registry client start exception&quot;),</span>
+<span class="fc" id="L12">    REGISTRY_CLIENT_UNAVAILABLE(&quot;10009&quot;, &quot;registry client unavailable&quot;),</span>
+<span class="fc" id="L13">    REGISTRY_UNSUBSCRIBE_EXCEPTION(&quot;10010&quot;, &quot;registry client unsubscribe exception&quot;),</span>
+<span class="fc" id="L14">    SERVICE_IS_EMPTY(&quot;10011&quot;, &quot;service list is empty&quot;),</span>
+<span class="fc" id="L15">    NO_PROVIDER_PATH(&quot;10012&quot;, &quot;service no provider path&quot;);</span>
+
+    private final String code;
+    private final String message;
+
+<span class="fc" id="L20">    RpcErrorCode(String code, String message) {</span>
+<span class="fc" id="L21">        this.code = code;</span>
+<span class="fc" id="L22">        this.message = message;</span>
+<span class="fc" id="L23">    }</span>
+
+    public String getCode() {
+<span class="fc" id="L26">        return code;</span>
+    }
+
+    public String getMessage() {
+<span class="fc" id="L30">        return message;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

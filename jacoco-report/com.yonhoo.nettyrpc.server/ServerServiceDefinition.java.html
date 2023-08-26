@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ServerServiceDefinition.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">netty-rpc</a> &gt; <a href="index.source.html" class="el_package">com.yonhoo.nettyrpc.server</a> &gt; <span class="el_source">ServerServiceDefinition.java</span></div><h1>ServerServiceDefinition.java</h1><pre class="source lang-java linenums">package com.yonhoo.nettyrpc.server;
+
+
+import com.yonhoo.nettyrpc.common.Destroyable;
+import com.yonhoo.nettyrpc.common.ExecutorUtil;
+import com.yonhoo.nettyrpc.exception.RpcErrorCode;
+import com.yonhoo.nettyrpc.exception.RpcException;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import lombok.extern.slf4j.Slf4j;
+
+<span class="fc" id="L16">@Slf4j</span>
+public class ServerServiceDefinition implements Destroyable {
+    private final String serviceName;
+    private final Object serviceImpl;
+    private final Class&lt;?&gt; classType;
+    private final int weight;
+    private final int closeTimeout;
+    private final ExecutorService bizThreadPool;
+
+<span class="fc" id="L25">    private final AtomicBoolean available = new AtomicBoolean(true);</span>
+
+    public ServerServiceDefinition(String serviceName, Object serviceImpl,
+                                   Class&lt;?&gt; classType, int weight,
+                                   ExecutorService bizThreadPool,
+<span class="fc" id="L30">                                   int closeTimeout) {</span>
+<span class="fc" id="L31">        this.serviceName = serviceName;</span>
+<span class="fc" id="L32">        this.serviceImpl = serviceImpl;</span>
+<span class="fc" id="L33">        this.classType = classType;</span>
+<span class="fc" id="L34">        this.weight = weight;</span>
+<span class="fc" id="L35">        this.bizThreadPool = bizThreadPool;</span>
+<span class="fc" id="L36">        this.closeTimeout = closeTimeout;</span>
+<span class="fc" id="L37">    }</span>
+
+    public Object invokeMethod(String methodName, Class&lt;?&gt;[] parameterTypes, Object[] parameters) {
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">        if (!available.get()) {</span>
+<span class="nc" id="L41">            throw RpcException.with(RpcErrorCode.SERVICE_NOT_REGISTERED);</span>
+        }
+
+        try {
+<span class="fc" id="L45">            log.info(serviceName + &quot; invoke &quot; + methodName);</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">            if (bizThreadPool != null) {</span>
+<span class="fc" id="L47">                Future&lt;Object&gt; futureResult = bizThreadPool.submit(</span>
+<span class="fc" id="L48">                        () -&gt; invokeMethodByName(methodName, parameterTypes, parameters));</span>
+<span class="fc" id="L49">                return futureResult.get();</span>
+            }
+
+<span class="fc" id="L52">            return invokeMethodByName(methodName, parameterTypes, parameters);</span>
+<span class="fc" id="L53">        } catch (Exception e) {</span>
+<span class="fc" id="L54">            Throwable error = e.getCause();</span>
+<span class="fc" id="L55">            String errorMsg = e.getMessage();</span>
+
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">            if (error instanceof InvocationTargetException) {</span>
+<span class="fc" id="L58">                error = ((InvocationTargetException) error).getTargetException();</span>
+<span class="fc" id="L59">                errorMsg = error.getMessage();</span>
+            }
+
+<span class="fc" id="L62">            throw new RpcException(errorMsg, error);</span>
+        }
+    }
+
+    public boolean isAvailable() {
+<span class="fc" id="L67">        return available.get();</span>
+    }
+
+    private Object invokeMethodByName(String methodName, Class&lt;?&gt;[] parameterTypes, Object[] parameters) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+<span class="fc" id="L71">        Method method = serviceImpl.getClass().getMethod(methodName, parameterTypes);</span>
+<span class="fc" id="L72">        return method.invoke(serviceImpl, parameters);</span>
+    }
+
+    public int getWeight() {
+<span class="fc" id="L76">        return weight;</span>
+    }
+
+    public Class&lt;?&gt; getClassType() {
+<span class="nc" id="L80">        return classType;</span>
+    }
+
+    public String getServiceName() {
+<span class="fc" id="L84">        return serviceName;</span>
+    }
+
+    @Override
+    public void destroy() {
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (!available.compareAndSet(true, false)) {</span>
+<span class="nc" id="L90">            return;</span>
+        }
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (bizThreadPool != null) {</span>
+<span class="fc" id="L93">            log.info(&quot;service {} bizThreadPool now graceful shutdown&quot;, serviceName);</span>
+<span class="fc" id="L94">            ExecutorUtil.gracefulShutdown(bizThreadPool, closeTimeout);</span>
+        }
+
+        //TODO add use common biz thread pool , otherwise use netty childEventLoop
+
+        // if not use bizThreadPool , it was used netty childEventLoop
+        // so until await childEventLoop grace shutdown
+<span class="fc" id="L101">        log.info(&quot;service {} destroy down&quot;, serviceName);</span>
+<span class="fc" id="L102">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

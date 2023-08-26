@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ProxyInvoker.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">netty-rpc</a> &gt; <a href="index.source.html" class="el_package">com.yonhoo.nettyrpc.client</a> &gt; <span class="el_source">ProxyInvoker.java</span></div><h1>ProxyInvoker.java</h1><pre class="source lang-java linenums">package com.yonhoo.nettyrpc.client;
+
+import com.yonhoo.nettyrpc.common.RpcConstants;
+import com.yonhoo.nettyrpc.protocol.RpcRequest;
+import com.yonhoo.nettyrpc.registry.ConsumerConfig;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+
+public class ProxyInvoker implements InvocationHandler {
+
+    private final Class&lt;?&gt; interfaceClass;
+    private final InvokerBroker invokerBroker;
+
+<span class="fc" id="L14">    public ProxyInvoker(Class&lt;?&gt; interfaceClass, InvokerBroker invokerBroker) {</span>
+<span class="fc" id="L15">        this.interfaceClass = interfaceClass;</span>
+<span class="fc" id="L16">        this.invokerBroker = invokerBroker;</span>
+<span class="fc" id="L17">    }</span>
+
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) {
+<span class="fc" id="L21">        ConsumerConfig consumerConfig = invokerBroker.getConsumerConfig();</span>
+<span class="fc" id="L22">        String methodName = method.getName();</span>
+<span class="fc" id="L23">        Class[] paramTypes = method.getParameterTypes();</span>
+<span class="fc" id="L24">        RpcRequest rpcRequest = RpcRequest.builder()</span>
+<span class="fc" id="L25">                .serviceName(consumerConfig.getConsumerInterface())</span>
+<span class="fc" id="L26">                .parameters(args)</span>
+<span class="fc" id="L27">                .paramTypes(paramTypes)</span>
+<span class="fc" id="L28">                .methodName(methodName)</span>
+<span class="fc" id="L29">                .version(&quot;1.0&quot;)</span>
+<span class="fc" id="L30">                .build();</span>
+
+<span class="fc" id="L32">        return invokerBroker.doInvoke(rpcRequest);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

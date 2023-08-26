@@ -1,0 +1,63 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+netty-rpc,com.yonhoo.nettyrpc.exception,RpcException,3,42,0,0,1,14,1,5,1,5
+netty-rpc,com.yonhoo.nettyrpc.exception,RpcErrorCode,0,116,0,0,0,19,0,4,0,4
+netty-rpc,com.yonhoo.nettyrpc.server,NettyServer.new ChannelInitializer() {...},0,45,0,0,0,6,0,2,0,2
+netty-rpc,com.yonhoo.nettyrpc.server,ServerServiceDefinition,7,140,3,7,3,35,4,11,1,9
+netty-rpc,com.yonhoo.nettyrpc.server,NettyRpcServerHandler,46,113,10,6,16,31,10,5,2,5
+netty-rpc,com.yonhoo.nettyrpc.server,NettyServer,10,262,4,6,3,63,4,11,0,10
+netty-rpc,com.yonhoo.nettyrpc.server,NettyServerBuilder,62,56,0,0,16,12,10,5,10,5
+netty-rpc,com.yonhoo.nettyrpc.server,ServerConfig,56,3,0,0,9,1,16,1,16,1
+netty-rpc,com.yonhoo.nettyrpc.registry,DefaultProviderInfoListener,5,16,0,0,2,7,1,3,1,3
+netty-rpc,com.yonhoo.nettyrpc.registry,ServiceConfig.ServiceConfigBuilder,8,28,0,0,0,1,1,5,1,5
+netty-rpc,com.yonhoo.nettyrpc.registry,ProviderInfo,148,163,38,16,0,10,33,14,7,13
+netty-rpc,com.yonhoo.nettyrpc.registry,RegistryConfig.RegistryConfigBuilder,10,35,0,0,0,1,1,6,1,6
+netty-rpc,com.yonhoo.nettyrpc.registry,ProviderInfo.ProviderInfoBuilder,14,49,0,0,0,1,1,8,1,8
+netty-rpc,com.yonhoo.nettyrpc.registry,ZookeeperProviderObserver,59,201,1,3,15,51,4,13,3,12
+netty-rpc,com.yonhoo.nettyrpc.registry,ProviderConfig.ProviderConfigBuilder,27,27,0,0,0,1,4,4,4,4
+netty-rpc,com.yonhoo.nettyrpc.registry,ZookeeperRegistry,55,437,7,17,15,121,8,23,1,18
+netty-rpc,com.yonhoo.nettyrpc.registry,ZookeeperRegistryHelper,47,68,6,4,11,15,7,6,3,5
+netty-rpc,com.yonhoo.nettyrpc.load_balancer,DefaultLoadBalancer,4,25,1,1,1,4,1,2,0,2
+netty-rpc,com.yonhoo.nettyrpc.connection,ConnectionPool,169,176,29,13,38,43,26,8,5,8
+netty-rpc,com.yonhoo.nettyrpc.connection,ConnectionPool.AcquireTimeoutAction,15,0,0,0,3,0,1,0,1,0
+netty-rpc,com.yonhoo.nettyrpc.connection,BasePool.new Runnable() {...},0,20,0,0,0,3,0,2,0,2
+netty-rpc,com.yonhoo.nettyrpc.connection,BasePool.new Callable() {...},11,0,0,0,3,0,2,0,2,0
+netty-rpc,com.yonhoo.nettyrpc.connection,ConnectionPool.3.new FutureListener() {...},24,0,2,0,5,0,3,0,2,0
+netty-rpc,com.yonhoo.nettyrpc.connection,ConnectionPool.AcquireTimeoutException,6,0,0,0,3,0,2,0,2,0
+netty-rpc,com.yonhoo.nettyrpc.connection,ConnectionPool.AcquireTask,0,21,0,0,0,5,0,1,0,1
+netty-rpc,com.yonhoo.nettyrpc.connection,ConnectionPool.new Runnable() {...},0,20,0,0,0,3,0,2,0,2
+netty-rpc,com.yonhoo.nettyrpc.connection,ConnectionPool.new Runnable() {...},0,19,0,0,0,3,0,2,0,2
+netty-rpc,com.yonhoo.nettyrpc.connection,ConnectionPool.new Runnable() {...},19,0,0,0,3,0,2,0,2,0
+netty-rpc,com.yonhoo.nettyrpc.connection,Connection,19,186,10,18,7,43,10,16,0,12
+netty-rpc,com.yonhoo.nettyrpc.connection,ConnectionPool.new Callable() {...},14,0,0,0,3,0,2,0,2,0
+netty-rpc,com.yonhoo.nettyrpc.connection,ConnectionPool.new Callable() {...},0,14,0,0,0,3,0,2,0,2
+netty-rpc,com.yonhoo.nettyrpc.connection,Connection.new ChannelFutureListener() {...},0,30,0,0,0,4,0,2,0,2
+netty-rpc,com.yonhoo.nettyrpc.connection,Connection.new ChannelFutureListener() {...},0,33,0,0,0,5,0,2,0,2
+netty-rpc,com.yonhoo.nettyrpc.connection,BasePool.ChannelPoolFullException,6,0,0,0,3,0,2,0,2,0
+netty-rpc,com.yonhoo.nettyrpc.connection,ConnectionPool.2.new FutureListener() {...},7,17,1,1,1,4,1,2,0,2
+netty-rpc,com.yonhoo.nettyrpc.connection,ClientChannelPoolHandler,3,3,0,0,3,1,3,1,3,1
+netty-rpc,com.yonhoo.nettyrpc.connection,ConnectionPool.AcquireListener,39,42,8,6,8,11,7,3,0,3
+netty-rpc,com.yonhoo.nettyrpc.connection,ConnectionPool.TimeoutTask,62,0,9,0,14,0,8,0,3,0
+netty-rpc,com.yonhoo.nettyrpc.connection,BasePool,235,152,29,11,66,37,29,11,11,9
+netty-rpc,com.yonhoo.nettyrpc.connection,DefaultClientConnectionManager,12,41,1,1,2,12,1,4,0,4
+netty-rpc,com.yonhoo.nettyrpc.connection,ConnectionFactory,51,50,4,4,10,15,4,4,0,4
+netty-rpc,com.yonhoo.nettyrpc.client,DefaultClientTransport,38,68,3,1,7,21,2,4,0,4
+netty-rpc,com.yonhoo.nettyrpc.client,DefaultConsumerBootstrap,11,111,4,4,3,28,4,5,0,5
+netty-rpc,com.yonhoo.nettyrpc.client,InvokeContext,0,10,0,0,0,3,0,3,0,3
+netty-rpc,com.yonhoo.nettyrpc.client,DefaultClientTransport.new FutureListener() {...},5,14,1,1,1,4,1,2,0,2
+netty-rpc,com.yonhoo.nettyrpc.client,NettyClient.new ChannelInitializer() {...},0,58,0,0,0,7,0,2,0,2
+netty-rpc,com.yonhoo.nettyrpc.client,NettyClient.new FutureListener() {...},5,14,1,1,1,4,1,2,0,2
+netty-rpc,com.yonhoo.nettyrpc.client,NettyClient.new ChannelInitializer() {...},0,58,0,0,0,7,0,2,0,2
+netty-rpc,com.yonhoo.nettyrpc.client,RpcClientProxy,0,33,0,0,0,7,0,2,0,2
+netty-rpc,com.yonhoo.nettyrpc.client,ProxyInvoker,0,38,0,0,0,15,0,2,0,2
+netty-rpc,com.yonhoo.nettyrpc.client,InvokerBroker,4,67,1,1,2,20,2,7,1,7
+netty-rpc,com.yonhoo.nettyrpc.client,NettyClient,6,207,1,3,3,46,3,7,2,6
+netty-rpc,com.yonhoo.nettyrpc.client,NettyRpcClientHandler,11,81,4,4,4,27,4,6,0,6
+netty-rpc,com.yonhoo.nettyrpc.serialize,ProtostuffSerializer,0,35,0,0,0,11,0,4,0,4
+netty-rpc,com.yonhoo.nettyrpc.protocol,RpcRequest,23,37,0,0,3,7,3,7,3,7
+netty-rpc,com.yonhoo.nettyrpc.protocol,RpcMessage.RpcMessageBuilder,12,42,0,0,0,1,1,7,1,7
+netty-rpc,com.yonhoo.nettyrpc.protocol,RpcResponse,32,65,3,3,4,17,6,10,4,9
+netty-rpc,com.yonhoo.nettyrpc.protocol,RpcResponse.RpcResponseBuilder,36,0,0,0,1,0,6,0,6,0
+netty-rpc,com.yonhoo.nettyrpc.protocol,RpcMessageDecoder,20,144,5,9,4,42,5,9,0,7
+netty-rpc,com.yonhoo.nettyrpc.protocol,RpcMessageEncoder,10,176,3,5,3,46,3,8,0,7
+netty-rpc,com.yonhoo.nettyrpc.protocol,RpcRequest.RpcRequestBuilder,14,42,0,0,0,1,1,7,1,7
+netty-rpc,com.yonhoo.nettyrpc.protocol,RpcMessage,120,53,20,0,1,13,13,8,3,8

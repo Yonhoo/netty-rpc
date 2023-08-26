@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NettyClient.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">netty-rpc</a> &gt; <a href="index.source.html" class="el_package">com.yonhoo.nettyrpc.client</a> &gt; <span class="el_source">NettyClient.java</span></div><h1>NettyClient.java</h1><pre class="source lang-java linenums">package com.yonhoo.nettyrpc.client;
+
+
+import com.yonhoo.nettyrpc.common.CompressTypeEnum;
+import com.yonhoo.nettyrpc.common.RpcConstants;
+import com.yonhoo.nettyrpc.connection.Connection;
+import com.yonhoo.nettyrpc.exception.RpcErrorCode;
+import com.yonhoo.nettyrpc.exception.RpcException;
+import com.yonhoo.nettyrpc.protocol.RpcMessage;
+import com.yonhoo.nettyrpc.protocol.RpcMessageDecoder;
+import com.yonhoo.nettyrpc.protocol.RpcMessageEncoder;
+import com.yonhoo.nettyrpc.protocol.RpcRequest;
+import com.yonhoo.nettyrpc.protocol.RpcResponse;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import lombok.extern.slf4j.Slf4j;
+
+<span class="fc" id="L33">@Slf4j</span>
+public class NettyClient {
+    private Bootstrap bootstrap;
+    private EventLoopGroup eventLoopGroup;
+
+<span class="fc" id="L38">    private AtomicInteger atomicInteger = new AtomicInteger(0);</span>
+<span class="fc" id="L39">    private final NettyRpcClientHandler nettyRpcClientHandler = new NettyRpcClientHandler();</span>
+
+<span class="fc" id="L41">    public NettyClient(String host, int port) {</span>
+        // netty bootstrap should be wrap in class
+<span class="fc" id="L43">        eventLoopGroup = new NioEventLoopGroup();</span>
+<span class="fc" id="L44">        bootstrap = new Bootstrap();</span>
+
+<span class="fc" id="L46">        bootstrap.group(eventLoopGroup)</span>
+<span class="fc" id="L47">                .channel(NioSocketChannel.class)</span>
+<span class="fc" id="L48">                .handler(new LoggingHandler(LogLevel.INFO))</span>
+                //  The timeout period of the connection.
+                //  If this time is exceeded or the connection cannot be established, the connection fails.
+<span class="fc" id="L51">                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)</span>
+<span class="fc" id="L52">                .option(ChannelOption.SO_KEEPALIVE, true)</span>
+<span class="fc" id="L53">                .remoteAddress(host, port)</span>
+<span class="fc" id="L54">                .handler(new ChannelInitializer&lt;SocketChannel&gt;() {</span>
+                    @Override
+                    protected void initChannel(SocketChannel ch) {
+<span class="fc" id="L57">                        ChannelPipeline p = ch.pipeline();</span>
+                        // If no data is sent to the server within 15 seconds, a heartbeat request is sent
+<span class="fc" id="L59">                        p.addLast(new IdleStateHandler(0, 0, 15, TimeUnit.SECONDS));</span>
+<span class="fc" id="L60">                        p.addLast(new RpcMessageEncoder());</span>
+<span class="fc" id="L61">                        p.addLast(new RpcMessageDecoder());</span>
+<span class="fc" id="L62">                        p.addLast(nettyRpcClientHandler);</span>
+<span class="fc" id="L63">                    }</span>
+                });
+<span class="fc" id="L65">    }</span>
+
+<span class="fc" id="L67">    public NettyClient() {</span>
+        // netty bootstrap should be wrap in class
+<span class="fc" id="L69">        eventLoopGroup = new NioEventLoopGroup();</span>
+<span class="fc" id="L70">        bootstrap = new Bootstrap();</span>
+
+<span class="fc" id="L72">        bootstrap.group(eventLoopGroup)</span>
+<span class="fc" id="L73">                .channel(NioSocketChannel.class)</span>
+<span class="fc" id="L74">                .handler(new LoggingHandler(LogLevel.INFO))</span>
+                //  The timeout period of the connection.
+                //  If this time is exceeded or the connection cannot be established, the connection fails.
+<span class="fc" id="L77">                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)</span>
+<span class="fc" id="L78">                .option(ChannelOption.SO_KEEPALIVE, true)</span>
+<span class="fc" id="L79">                .handler(new ChannelInitializer&lt;SocketChannel&gt;() {</span>
+                    @Override
+                    protected void initChannel(SocketChannel ch) {
+<span class="fc" id="L82">                        ChannelPipeline p = ch.pipeline();</span>
+                        // If no data is sent to the server within 15 seconds, a heartbeat request is sent
+<span class="fc" id="L84">                        p.addLast(new IdleStateHandler(0, 0, 15, TimeUnit.SECONDS));</span>
+<span class="fc" id="L85">                        p.addLast(new RpcMessageEncoder());</span>
+<span class="fc" id="L86">                        p.addLast(new RpcMessageDecoder());</span>
+<span class="fc" id="L87">                        p.addLast(nettyRpcClientHandler);</span>
+<span class="fc" id="L88">                    }</span>
+                });
+<span class="fc" id="L90">    }</span>
+
+//    public Channel connect() {
+//
+//        this.channel = bootstrap.connect()
+//                .awaitUninterruptibly()
+//                .addListener((ChannelFutureListener) future -&gt; {
+//                    if (future.isSuccess()) {
+//                        log.info(&quot;The netty client connected to {} successful!&quot;, bootstrap.config().remoteAddress());
+//                    } else {
+//                        throw new IllegalStateException(&quot;netty client start error&quot;);
+//                    }
+//                }).channel();
+//        return channel;
+//    }
+
+    public &lt;T&gt; T registerService(Class&lt;T&gt; classType) {
+<span class="nc" id="L107">        return null;</span>
+    }
+
+    public Object syncInvoke(RpcRequest request, Connection connection) {
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (connection.isFine()) {</span>
+            try {
+<span class="fc" id="L113">                RpcMessage rpcMessage = RpcMessage.builder()</span>
+<span class="fc" id="L114">                        .messageType(RpcConstants.REQUEST_TYPE)</span>
+                        //TODO use UUID
+<span class="fc" id="L116">                        .requestId(atomicInteger.getAndIncrement())</span>
+<span class="fc" id="L117">                        .codec(RpcConstants.PROTOCOL_DEFAULT_TYPE)</span>
+<span class="fc" id="L118">                        .compress(CompressTypeEnum.NONE.getCode())</span>
+<span class="fc" id="L119">                        .data(request)</span>
+<span class="fc" id="L120">                        .build();</span>
+
+<span class="fc" id="L122">                CompletableFuture&lt;RpcResponse&gt; responseFuture = new CompletableFuture&lt;&gt;();</span>
+<span class="fc" id="L123">                connection.addInvokeFuture(rpcMessage.getRequestId(), responseFuture);</span>
+                //nettyRpcClientHandler.setStreamResponsePromise(rpcMessage.getRequestId(), responseFuture);
+                //TODO add future listener handle
+<span class="fc" id="L126">                connection.getChannel().writeAndFlush(rpcMessage)</span>
+<span class="fc" id="L127">                        .addListener(new FutureListener&lt;Void&gt;() {</span>
+                            public void operationComplete(Future&lt;Void&gt; f) throws Exception {
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">                                if (f.isSuccess()) {</span>
+<span class="fc" id="L130">                                    log.info(&quot;channel write message success&quot;);</span>
+                                } else {
+<span class="nc" id="L132">                                    log.error(&quot;write message error:&quot;, f.cause());</span>
+                                }
+
+<span class="fc" id="L135">                            }</span>
+                        });
+<span class="fc" id="L137">                return responseFuture.get().getData();</span>
+<span class="fc" id="L138">            } catch (InterruptedException | ExecutionException e) {</span>
+<span class="pc bpc" id="L139" title="1 of 2 branches missed.">                if (e instanceof InterruptedException) {</span>
+<span class="nc" id="L140">                    Thread.currentThread().interrupt();</span>
+                }
+<span class="fc" id="L142">                log.error(&quot;invoke service[{}] method[{}] send message error&quot;, request.getServiceName(), request.getMethodName(), e);</span>
+<span class="fc" id="L143">                throw RpcException.with(RpcErrorCode.RPC_INVOKE_METHOD_ERROR);</span>
+            }
+        } else {
+<span class="fc" id="L146">            log.error(&quot;invoke service[{}] method[{}] error&quot;, request.getServiceName(), request.getMethodName());</span>
+<span class="fc" id="L147">            throw RpcException.with(RpcErrorCode.RPC_CHANNEL_IS_NOT_ACTIVE);</span>
+        }
+    }
+
+    //TODO add async invoke
+
+    public Object syncInvoke(RpcRequest request, int timeout) {
+<span class="nc" id="L154">        return null;</span>
+    }
+
+    public Bootstrap getBootstrap() {
+<span class="fc" id="L158">        return bootstrap;</span>
+    }
+
+    public void close() {
+<span class="fc" id="L162">        eventLoopGroup.shutdownGracefully().awaitUninterruptibly();</span>
+<span class="fc" id="L163">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>

@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Connection.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">netty-rpc</a> &gt; <a href="index.source.html" class="el_package">com.yonhoo.nettyrpc.connection</a> &gt; <span class="el_source">Connection.java</span></div><h1>Connection.java</h1><pre class="source lang-java linenums">package com.yonhoo.nettyrpc.connection;
+
+import com.yonhoo.nettyrpc.exception.RpcErrorCode;
+import com.yonhoo.nettyrpc.exception.RpcException;
+import com.yonhoo.nettyrpc.protocol.RpcResponse;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
+import io.netty.util.internal.ObjectUtil;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import lombok.extern.slf4j.Slf4j;
+
+<span class="fc" id="L25">@Slf4j</span>
+public class Connection {
+    private Channel channel;
+<span class="fc" id="L28">    private final ConcurrentHashMap&lt;Integer, CompletableFuture&lt;RpcResponse&gt;&gt; invokeFutureMap =</span>
+            new ConcurrentHashMap&lt;&gt;();
+<span class="fc" id="L30">    private AtomicInteger referenceCount = new AtomicInteger();</span>
+<span class="fc" id="L31">    private AtomicBoolean closed = new AtomicBoolean(false);</span>
+
+<span class="fc" id="L33">    public static final AttributeKey&lt;Connection&gt; CONNECTION = AttributeKey.valueOf(&quot;connection&quot;);</span>
+
+<span class="fc" id="L35">    public Connection(Channel channel) {</span>
+<span class="fc" id="L36">        this.channel = ObjectUtil.checkNotNull(channel, &quot;channel not be null&quot;);</span>
+<span class="fc" id="L37">        this.channel.attr(CONNECTION).set(this);</span>
+<span class="fc" id="L38">    }</span>
+
+    public Channel getChannel() {
+<span class="fc" id="L41">        return channel;</span>
+    }
+
+    public boolean isFine() {
+<span class="pc bpc" id="L45" title="3 of 8 branches missed.">        return !closed.get() &amp;&amp; this.channel != null &amp;&amp; this.channel.isActive() &amp;&amp; this.channel.isWritable();</span>
+    }
+
+    public Boolean inEventLoop() {
+<span class="fc" id="L49">        return channel.eventLoop().inEventLoop();</span>
+    }
+
+    public void inEventLoopExecute(Runnable runnable) {
+<span class="fc" id="L53">        channel.eventLoop().execute(runnable);</span>
+<span class="fc" id="L54">    }</span>
+
+    public CompletableFuture&lt;RpcResponse&gt; addInvokeFuture(Integer invokeId, CompletableFuture&lt;RpcResponse&gt; future) {
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">        if (!isFine()) {</span>
+<span class="nc" id="L58">            throw RpcException.with(RpcErrorCode.RPC_CHANNEL_IS_NOT_ACTIVE);</span>
+        }
+<span class="fc" id="L60">        CompletableFuture&lt;RpcResponse&gt; origin = this.invokeFutureMap.putIfAbsent(invokeId, future);</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        if (origin == null) {</span>
+<span class="fc" id="L62">            this.referenceCount.incrementAndGet();</span>
+        }
+<span class="fc" id="L64">        return origin;</span>
+    }
+
+    public CompletableFuture&lt;RpcResponse&gt; removeInvokeFuture(Integer invokeId) {
+<span class="fc" id="L68">        CompletableFuture&lt;RpcResponse&gt; result = this.invokeFutureMap.remove(invokeId);</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (result != null) {</span>
+<span class="fc" id="L70">            this.referenceCount.decrementAndGet();</span>
+        }
+<span class="fc" id="L72">        return result;</span>
+    }
+
+    public Integer getReferenceCount() {
+<span class="fc" id="L76">        return referenceCount.get();</span>
+    }
+
+    public void closeChannel() {
+        try {
+<span class="pc bpc" id="L81" title="2 of 6 branches missed.">            if (!closed.get() &amp;&amp; this.channel != null &amp;&amp; referenceCount.get() == 0) {</span>
+<span class="fc" id="L82">                closed.compareAndSet(false, true);</span>
+<span class="fc" id="L83">                this.channel.close().addListener(new ChannelFutureListener() {</span>
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+<span class="fc" id="L86">                        log.info(&quot;Close the connection to remote address={}, result={}, cause={}&quot;,</span>
+<span class="fc" id="L87">                                Connection.this.channel.remoteAddress(), future.isSuccess(), future.cause());</span>
+
+<span class="fc" id="L89">                    }</span>
+
+                });
+            }
+<span class="nc" id="L93">        } catch (Exception e) {</span>
+<span class="nc" id="L94">            log.warn(&quot;Exception caught when closing connection {}&quot;,</span>
+<span class="nc" id="L95">                    Connection.this.channel.remoteAddress(), e);</span>
+<span class="fc" id="L96">        }</span>
+<span class="fc" id="L97">    }</span>
+
+    public void close() {
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        if (closed.compareAndSet(false, true)) {</span>
+            try {
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">                if (this.channel != null) {</span>
+<span class="fc" id="L103">                    this.channel.close().addListener(new ChannelFutureListener() {</span>
+
+                        @Override
+                        public void operationComplete(ChannelFuture future) throws Exception {
+<span class="fc" id="L107">                            onClose();</span>
+<span class="fc" id="L108">                            log.info(&quot;Close the connection to remote address={}, result={}, cause={}&quot;,</span>
+<span class="fc" id="L109">                                    Connection.this.channel.remoteAddress(), future.isSuccess(), future.cause());</span>
+
+<span class="fc" id="L111">                        }</span>
+
+                    });
+                }
+<span class="nc" id="L115">            } catch (Exception e) {</span>
+<span class="nc" id="L116">                log.warn(&quot;Exception caught when closing connection {}&quot;,</span>
+<span class="nc" id="L117">                        Connection.this.channel.remoteAddress(), e);</span>
+<span class="fc" id="L118">            }</span>
+        }
+<span class="fc" id="L120">    }</span>
+
+    private void onClose() {
+<span class="fc" id="L123">        Iterator&lt;Map.Entry&lt;Integer, CompletableFuture&lt;RpcResponse&gt;&gt;&gt; iter = invokeFutureMap.entrySet().iterator();</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        while (iter.hasNext()) {</span>
+<span class="fc" id="L125">            Map.Entry&lt;Integer, CompletableFuture&lt;RpcResponse&gt;&gt; entry = iter.next();</span>
+<span class="fc" id="L126">            iter.remove();</span>
+<span class="fc" id="L127">            CompletableFuture&lt;RpcResponse&gt; future = entry.getValue();</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">            if (future != null) {</span>
+<span class="fc" id="L129">                future.completeExceptionally(new Throwable(&quot;connection closed&quot;));</span>
+            }
+<span class="fc" id="L131">        }</span>
+<span class="fc" id="L132">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.7.202105040129</span></div></body></html>
