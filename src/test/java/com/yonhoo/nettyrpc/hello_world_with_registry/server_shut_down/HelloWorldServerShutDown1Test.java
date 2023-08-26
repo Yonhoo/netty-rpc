@@ -62,7 +62,7 @@ public class HelloWorldServerShutDown1Test extends BaseIntegrationTest {
         nettyServer.destroy();
 
         RpcException rpcException = assertThrows(RpcException.class, () -> nettyClient.syncInvoke(request, connection));
-        assertThat(rpcException.getErrorMessage()).isEqualTo("invoke method error");
+        assertThat(rpcException.getErrorMessage()).isEqualTo("connect channel is not active");
 
         String response = (String) responseFuture.get(1, TimeUnit.SECONDS);
 
