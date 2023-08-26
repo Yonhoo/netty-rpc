@@ -17,7 +17,7 @@ jobs:
           java-version: ${{matrix. java}}
           cache: 'maven'
       - name: Run test 
-        run: ./mvnw clean test
+        run: /home/runner/work/netty-rpc/netty-rpc/mvnw clean test
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:
