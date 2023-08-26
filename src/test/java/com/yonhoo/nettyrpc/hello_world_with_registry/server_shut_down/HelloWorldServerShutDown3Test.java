@@ -12,7 +12,6 @@ import com.yonhoo.nettyrpc.server.NettyServer;
 import com.yonhoo.nettyrpc.server.NettyServerBuilder;
 import com.yonhoo.nettyrpc.server.ServerServiceDefinition;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.*;
@@ -21,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Slf4j
-public class HelloWorldServerShutDown1Test extends BaseIntegrationTest {
+public class HelloWorldServerShutDown3Test extends BaseIntegrationTest {
 
     private static final ServerServiceDefinition helloWorldService =
             new ServerServiceDefinition(HelloWorld.class.getName(),
