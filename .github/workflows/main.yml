@@ -17,7 +17,7 @@ jobs:
           java-version: ${{matrix. java}}
           cache: 'maven'
       - name: Run test 
-        run: mvn clean test
+        run: ./mvnw clean test
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:
