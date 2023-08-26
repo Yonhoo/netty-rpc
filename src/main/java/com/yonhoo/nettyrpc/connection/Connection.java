@@ -34,8 +34,7 @@ public class Connection {
 
     public Connection(Channel channel) {
         this.channel = ObjectUtil.checkNotNull(channel, "channel not be null");
-        Attribute<Connection> attr = this.channel.attr(CONNECTION);
-        //.set(this);
+        this.channel.attr(CONNECTION).set(this);
     }
 
     public Channel getChannel() {

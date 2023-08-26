@@ -50,14 +50,16 @@ public class ServerServiceDefinition implements Destroyable {
             }
 
             return invokeMethodByName(methodName, parameterTypes, parameters);
-        } catch (SecurityException | NoSuchMethodException | IllegalArgumentException
-                 | InvocationTargetException | IllegalAccessException
-                 | ExecutionException | InterruptedException e) {
+        } catch (Exception e) {
+            Throwable error = e.getCause();
             String errorMsg = e.getMessage();
-            if (e instanceof InvocationTargetException) {
-                errorMsg = ((InvocationTargetException) e).getTargetException().getMessage();
+
+            if (error instanceof InvocationTargetException) {
+                error = ((InvocationTargetException) error).getTargetException();
+                errorMsg = error.getMessage();
             }
-            throw new RpcException(errorMsg, e);
+
+            throw new RpcException(errorMsg, error);
         }
     }
 

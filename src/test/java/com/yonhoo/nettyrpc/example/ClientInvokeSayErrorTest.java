@@ -2,6 +2,7 @@ package com.yonhoo.nettyrpc.example;
 
 import com.yonhoo.nettyrpc.client.NettyClient;
 import com.yonhoo.nettyrpc.connection.Connection;
+import com.yonhoo.nettyrpc.exception.RpcException;
 import com.yonhoo.nettyrpc.server_base.BaseIntegrationTest;
 import com.yonhoo.nettyrpc.helloworld.HelloWorld;
 import com.yonhoo.nettyrpc.helloworld.HelloWorldImpl;
@@ -16,8 +17,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class ClientInvokeSayHi extends BaseIntegrationTest {
+public class ClientInvokeSayErrorTest extends BaseIntegrationTest {
 
     @BeforeEach
     public void startServer() throws InterruptedException {
@@ -40,19 +42,17 @@ public class ClientInvokeSayHi extends BaseIntegrationTest {
     }
 
     @Test
-    public void test() throws InterruptedException {
-        NettyClient nettyClient = new NettyClient("0.0.0.0", 13456);
+    public void test() {
+        NettyClient nettyClient = new NettyClient("127.0.0.1", 13456);
         Connection connection = new Connection(nettyClient.getBootstrap()
                 .connect().awaitUninterruptibly().channel());
         RpcRequest request = RpcRequest.builder()
-                .methodName("sayHello")
-                .paramTypes(new Class[]{String.class})
-                .parameters(new String[]{"weclome!"})
+                .methodName("sayError")
                 .serviceName(HelloWorld.class.getName())
                 .build();
 
-        String response = (String) nettyClient.syncInvoke(request, connection);
-        assertThat(response).isEqualTo("yonhoo weclome!");
+        RpcException rpcException = assertThrows(RpcException.class, () -> nettyClient.syncInvoke(request, connection));
+        assertThat(rpcException.getErrorMessage()).isEqualTo("say error");
 
         nettyClient.close();
     }

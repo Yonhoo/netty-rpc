@@ -88,6 +88,7 @@
         </dependency>
     </dependencies>
 
+
     <build>
         <plugins>
             <plugin>
@@ -101,6 +102,36 @@
                         </exclude>
                     </excludes>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.7</version>
+                <configuration>
+                    <includes>
+                        <include>com/yonhoo/nettyrpc/*</include>
+                    </includes>
+                    <excludes>
+                        <exclude>com/yonhoo/nettyrpc/config/*</exclude>
+                        <exclude>com/yonhoo/nettyrpc/common/*</exclude>
+                        <exclude>com/yonhoo/nettyrpc/util/*</exclude>
+                        <exclude>com/yonhoo/nettyrpc/NettyRpcApplication.*</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>default-report</id>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

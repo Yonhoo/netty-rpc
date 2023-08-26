@@ -1,6 +1,7 @@
 package com.yonhoo.nettyrpc.registry.base;
 
 import java.io.IOException;
+
 import org.apache.curator.test.TestingServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

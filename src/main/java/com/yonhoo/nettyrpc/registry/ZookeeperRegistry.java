@@ -68,6 +68,7 @@ public class ZookeeperRegistry implements Registry, Destroyable {
         zkClient.start();
 
         if (CuratorFrameworkState.STARTED != zkClient.getState()) {
+            log.error("client status: {}", zkClient.getState().toString());
             throw RpcException.with(RpcErrorCode.REGISTRY_CLIENT_START_EXCEPTION);
         }
     }
@@ -116,6 +117,7 @@ public class ZookeeperRegistry implements Registry, Destroyable {
 
     private void checkZkClient() {
         if (zkClient == null || zkClient.getState() != CuratorFrameworkState.STARTED) {
+            log.error("client status: {}", zkClient.getState().toString());
             throw RpcException.with(RpcErrorCode.REGISTRY_CLIENT_UNAVAILABLE);
         }
     }

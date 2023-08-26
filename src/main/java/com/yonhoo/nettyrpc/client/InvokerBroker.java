@@ -1,6 +1,8 @@
 package com.yonhoo.nettyrpc.client;
 
 import com.yonhoo.nettyrpc.common.Destroyable;
+import com.yonhoo.nettyrpc.exception.RpcErrorCode;
+import com.yonhoo.nettyrpc.exception.RpcException;
 import com.yonhoo.nettyrpc.load_balancer.DefaultLoadBalancer;
 import com.yonhoo.nettyrpc.load_balancer.LoadBalancer;
 import com.yonhoo.nettyrpc.protocol.RpcRequest;
@@ -41,7 +43,7 @@ public class InvokerBroker implements ProviderInfoListener, Destroyable {
 
     public Object doInvoke(RpcRequest request) {
         if (providerInfos.isEmpty()) {
-            // FixMe
+            throw RpcException.with(RpcErrorCode.NO_PROVIDER_PATH);
         }
         InvokeContext invokeContext = new InvokeContext();
 

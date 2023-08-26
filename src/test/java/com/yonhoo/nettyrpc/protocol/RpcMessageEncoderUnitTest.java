@@ -68,19 +68,23 @@ class RpcMessageEncoderUnitTest {
         ChannelHandlerContext ctx = Mockito.mock(ChannelHandlerContext.class);
 
         ByteBuf out = Unpooled.buffer(50);
-        RpcMessage message = RpcMessage.builder().build();
+        RpcMessage message = RpcMessage.builder()
+                .codec((byte) 0)
+                .compress(CompressTypeEnum.NONE.getCode())
+                .requestId(1)
+                .build();
 
         RpcMessageEncoder rpcMessageEncoder = new RpcMessageEncoder();
         rpcMessageEncoder.encode(ctx, message, out);
 
-        assertThat(out.getInt(TOTAL_LENGTH)).isEqualTo(46);
+        assertThat(out.getInt(TOTAL_LENGTH)).isEqualTo(53);
         assertThat(out.getByte(MAGIC_NUMBER_0)).isEqualTo(RpcConstants.MAGIC_NUMBER[0]);
         assertThat(out.getByte(MAGIC_NUMBER_1)).isEqualTo(RpcConstants.MAGIC_NUMBER[1]);
         assertThat(out.getByte(MAGIC_NUMBER_2)).isEqualTo(RpcConstants.MAGIC_NUMBER[2]);
         assertThat(out.getByte(MAGIC_NUMBER_3)).isEqualTo(RpcConstants.MAGIC_NUMBER[3]);
         assertThat(out.getByte(PROTOCOL_VERSION)).isEqualTo(RpcConstants.VERSION);
         assertThat(out.getByte(RESPONSE_TYPE)).isEqualTo(RpcConstants.ERROR_TYPE);
-        assertThat(out.getByte(CODEC_TYPE)).isEqualTo(RpcConstants.PROTOCOL_DEFAULT_TYPE);
+        assertThat(out.getByte(CODEC_TYPE)).isEqualTo((byte) 0);
         assertThat(out.getByte(COMPRESS_TYPE)).isEqualTo(CompressTypeEnum.NONE.getCode());
         assertThat(out.getInt(REQUEST_ID)).isGreaterThan(0);
 

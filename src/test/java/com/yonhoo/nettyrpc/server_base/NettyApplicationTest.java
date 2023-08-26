@@ -1,4 +1,4 @@
-package com.yonhoo.nettyrpc.hello_world_with_registry.client_base;
+package com.yonhoo.nettyrpc.server_base;
 
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;

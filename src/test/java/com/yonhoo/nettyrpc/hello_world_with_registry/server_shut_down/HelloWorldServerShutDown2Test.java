@@ -5,7 +5,7 @@ import com.yonhoo.nettyrpc.client.NettyClient;
 import com.yonhoo.nettyrpc.common.RpcRunTimeContext;
 import com.yonhoo.nettyrpc.connection.Connection;
 import com.yonhoo.nettyrpc.exception.RpcException;
-import com.yonhoo.nettyrpc.hello_world_with_registry.server_base.BaseIntegrationTest;
+import com.yonhoo.nettyrpc.server_base.BaseIntegrationTest;
 import com.yonhoo.nettyrpc.helloworld.HelloWorld;
 import com.yonhoo.nettyrpc.helloworld.HelloWorldImpl;
 import com.yonhoo.nettyrpc.protocol.RpcRequest;
@@ -31,7 +31,7 @@ public class HelloWorldServerShutDown2Test extends BaseIntegrationTest {
                     null,
                     10);
 
-    private final NettyServer nettyServer = NettyServerBuilder.forAddress("127.0.0.1", 13456)
+    private final NettyServer nettyServer = NettyServerBuilder.forAddress("127.0.0.1", 13458)
             .addService(helloWorldService)
             .build();
 
@@ -46,7 +46,7 @@ public class HelloWorldServerShutDown2Test extends BaseIntegrationTest {
 
 
         RpcRunTimeContext.putAttribute(RpcRunTimeContext.STOP_TIME_OUT, "10", "10");
-        NettyClient nettyClient = new NettyClient("0.0.0.0", 13456);
+        NettyClient nettyClient = new NettyClient("0.0.0.0", 13458);
         Connection connection = new Connection(nettyClient.getBootstrap()
                 .connect().awaitUninterruptibly().channel());
         RpcRequest request = RpcRequest.builder()
