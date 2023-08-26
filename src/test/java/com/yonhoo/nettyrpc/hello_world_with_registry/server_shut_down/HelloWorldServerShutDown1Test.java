@@ -37,7 +37,6 @@ public class HelloWorldServerShutDown1Test extends BaseIntegrationTest {
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(2);
 
-    @Disabled
     @Test
     void should_shut_down_gracefully_after_consume_finished_when_process_client_request_and_server_shut_down_time_out_given_hello_call_server_shut_down_signal() throws Exception {
 
@@ -64,7 +63,7 @@ public class HelloWorldServerShutDown1Test extends BaseIntegrationTest {
         nettyServer.destroy();
 
         RpcException rpcException = assertThrows(RpcException.class, () -> nettyClient.syncInvoke(request, connection));
-        assertThat(rpcException.getErrorMessage()).isEqualTo("connect channel is not active");
+        assertThat(rpcException.getErrorMessage()).isEqualTo("invoke method error");
 
         String response = (String) responseFuture.get(1, TimeUnit.SECONDS);
 
