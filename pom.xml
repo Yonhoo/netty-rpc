@@ -113,7 +113,7 @@
                         <exclude>com/yonhoo/nettyrpc/common/*</exclude>
                         <exclude>com/yonhoo/nettyrpc/util/*</exclude>
                         <exclude>com/yonhoo/nettyrpc/NettyRpcApplication.*</exclude>
-                        <exclude>com/yonhoo/nettyrpc/registry/*config.*</exclude>
+                        <exclude>com/yonhoo/nettyrpc/registry/*Config.*</exclude>
                     </excludes>
                 </configuration>
                 <executions>
