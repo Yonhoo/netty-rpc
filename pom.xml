@@ -108,19 +108,17 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.7</version>
                 <configuration>
-                    <includes>
-                        <include>com/yonhoo/nettyrpc/*</include>
-                    </includes>
                     <excludes>
                         <exclude>com/yonhoo/nettyrpc/config/*</exclude>
                         <exclude>com/yonhoo/nettyrpc/common/*</exclude>
                         <exclude>com/yonhoo/nettyrpc/util/*</exclude>
                         <exclude>com/yonhoo/nettyrpc/NettyRpcApplication.*</exclude>
+                        <exclude>com/yonhoo/nettyrpc/registry/*config.*</exclude>
                     </excludes>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>default-prepare-agent</id>
+                        <id>pre-unit-test</id>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
@@ -130,6 +128,17 @@
                         <phase>test</phase>
                         <goals>
                             <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <dataFile>target/jacoco.exec</dataFile>
+                            <outputDirectory>target/jacoco-report</outputDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>pre-integration-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>prepare-agent-integration</goal>
                         </goals>
                     </execution>
                 </executions>
