@@ -60,15 +60,15 @@ public class HelloWorldServerShutDown2Test extends BaseIntegrationTest {
 
         Future<Object> responseFuture = executorService.submit(() -> nettyClient.syncInvoke(request, connection));
 
-        Thread.sleep(10);
+        String response = (String) responseFuture.get();
+
+        assertThat(response).isEqualTo("sleep done");
+
         nettyServer.destroy();
 
         RpcException rpcException = assertThrows(RpcException.class, () -> nettyClient.syncInvoke(request, connection));
         assertThat(rpcException.getErrorMessage()).isEqualTo("connect channel is not active");
 
-        String response = (String) responseFuture.get(1, TimeUnit.SECONDS);
-
-        assertThat(response).isEqualTo("sleep done");
         long end = System.currentTimeMillis();
 
         assertThat(end - start).isGreaterThan(10 * 1000);
