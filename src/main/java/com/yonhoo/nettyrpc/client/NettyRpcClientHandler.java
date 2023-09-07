@@ -14,6 +14,7 @@ import io.netty.util.Attribute;
 
 import java.util.concurrent.CompletableFuture;
 
+import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -34,6 +35,8 @@ public class NettyRpcClientHandler extends ChannelInboundHandlerAdapter {
         } catch (NullPointerException e) {
             e.printStackTrace();
             log.warn("this stream message was removed: {}", rpcMessage);
+        } finally {
+            ReferenceCountUtil.release(msg);
         }
 
     }

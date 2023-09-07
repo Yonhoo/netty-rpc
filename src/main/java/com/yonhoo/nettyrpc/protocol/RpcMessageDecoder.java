@@ -7,10 +7,13 @@ import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledHeapByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
+
+import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -36,16 +39,20 @@ public class RpcMessageDecoder extends LengthFieldBasedFrameDecoder {
 
     @Override
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
-        Object decoded = super.decode(ctx, in);
-        if (decoded instanceof ByteBuf) {
-            ByteBuf frame = (ByteBuf) decoded;
+        ByteBuf frame = (ByteBuf) super.decode(ctx, in);
+        try {
             if (frame.readableBytes() >= RpcConstants.TOTAL_LENGTH) {
                 return decodeFrame(frame);
             } else {
                 throw new RuntimeException("read in data total length less than 16 bytes");
             }
+        } catch (Exception e) {
+            throw new RuntimeException("decode error");
+        } finally {
+            if (frame != null) {
+                frame.release();
+            }
         }
-        return decoded;
     }
 
     private Object decodeFrame(ByteBuf in) {
@@ -82,6 +89,7 @@ public class RpcMessageDecoder extends LengthFieldBasedFrameDecoder {
                 RpcResponse tmpValue = serializer.deserialize(bs, RpcResponse.class);
                 rpcMessageBuilder.data(tmpValue);
             }
+            bs = null;
         }
         return rpcMessageBuilder.build();
 
@@ -105,5 +113,6 @@ public class RpcMessageDecoder extends LengthFieldBasedFrameDecoder {
                 throw new IllegalArgumentException("Unknown magic code: " + Arrays.toString(tmp));
             }
         }
+        tmp = null;
     }
 }

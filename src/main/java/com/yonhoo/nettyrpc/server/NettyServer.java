@@ -1,9 +1,9 @@
 package com.yonhoo.nettyrpc.server;
 
 import com.google.common.base.Preconditions;
-import com.yonhoo.nettyrpc.common.ApplicationContextUtil;
 import com.yonhoo.nettyrpc.common.Destroyable;
 import com.yonhoo.nettyrpc.common.RpcRunTimeContext;
+import com.yonhoo.nettyrpc.config.RegistryPropertiesConfig;
 import com.yonhoo.nettyrpc.exception.RpcErrorCode;
 import com.yonhoo.nettyrpc.exception.RpcException;
 import com.yonhoo.nettyrpc.protocol.RpcMessageDecoder;
@@ -67,7 +67,11 @@ public class NettyServer implements Destroyable {
                 throw RpcException.with(RpcErrorCode.SERVICE_IS_EMPTY);
             }
 
-            registry = ApplicationContextUtil.getBean(ZookeeperRegistry.class);
+            RegistryPropertiesConfig propertiesConfig = new RegistryPropertiesConfig();
+            propertiesConfig.setAddress("127.0.0.1");
+            propertiesConfig.setApplication("test-application");
+            propertiesConfig.setPort(2181);
+            Registry registry = new ZookeeperRegistry(propertiesConfig);
 
             if (Objects.nonNull(registry)) {
                 List<ProviderConfig> providerConfigs =

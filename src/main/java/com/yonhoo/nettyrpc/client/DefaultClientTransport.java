@@ -1,6 +1,5 @@
 package com.yonhoo.nettyrpc.client;
 
-import com.yonhoo.nettyrpc.common.ApplicationContextUtil;
 import com.yonhoo.nettyrpc.common.CompressTypeEnum;
 import com.yonhoo.nettyrpc.common.Destroyable;
 import com.yonhoo.nettyrpc.common.RpcConstants;
@@ -24,13 +23,17 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DefaultClientTransport implements Destroyable {
+
+    private final DefaultClientConnectionManager defaultClientConnectionManager;
     private static final AtomicInteger streamId = new AtomicInteger();
+
+    public DefaultClientTransport(DefaultClientConnectionManager defaultClientConnectionManager) {
+        this.defaultClientConnectionManager = defaultClientConnectionManager;
+    }
 
     public Object doSend(RpcRequest request, InvokeContext invokeContext) {
         ProviderInfo providerInfo = invokeContext.getProviderInfo();
-        DefaultClientConnectionManager connectionManager =
-                ApplicationContextUtil.getBean(DefaultClientConnectionManager.class);
-        Connection connection = connectionManager.getConnection(providerInfo.getUrl());
+        Connection connection = defaultClientConnectionManager.getConnection(providerInfo.getUrl());
         if (connection.isFine()) {
             try {
                 RpcMessage rpcMessage = RpcMessage.builder()

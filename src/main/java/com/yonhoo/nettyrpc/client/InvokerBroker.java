@@ -1,6 +1,7 @@
 package com.yonhoo.nettyrpc.client;
 
 import com.yonhoo.nettyrpc.common.Destroyable;
+import com.yonhoo.nettyrpc.connection.DefaultClientConnectionManager;
 import com.yonhoo.nettyrpc.exception.RpcErrorCode;
 import com.yonhoo.nettyrpc.exception.RpcException;
 import com.yonhoo.nettyrpc.load_balancer.DefaultLoadBalancer;
@@ -16,9 +17,10 @@ public class InvokerBroker implements ProviderInfoListener, Destroyable {
     private ConsumerConfig consumerConfig;
     private final LoadBalancer loadBalancer = new DefaultLoadBalancer();
     private final CopyOnWriteArrayList<ProviderInfo> providerInfos = new CopyOnWriteArrayList<>();
-    private final DefaultClientTransport defaultClientTransport = new DefaultClientTransport();
+    private final DefaultClientTransport defaultClientTransport;
 
-    public InvokerBroker(ConsumerConfig consumerConfig) {
+    public InvokerBroker(ConsumerConfig consumerConfig, DefaultClientConnectionManager defaultClientConnectionManager) {
+        this.defaultClientTransport = new DefaultClientTransport(defaultClientConnectionManager);
         this.consumerConfig = consumerConfig;
     }
 

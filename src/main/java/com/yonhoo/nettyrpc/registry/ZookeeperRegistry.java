@@ -24,10 +24,8 @@ import org.apache.curator.framework.recipes.cache.CuratorCache;
 import org.apache.curator.framework.recipes.cache.CuratorCacheListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.CreateMode;
-import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
 public class ZookeeperRegistry implements Registry, Destroyable {
 
     public static final String CONTEXT_SEP = "/";
