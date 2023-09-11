@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import io.netty.util.NettyRuntime;
 import io.netty.util.concurrent.Future;
 import lombok.extern.slf4j.Slf4j;
 
@@ -114,7 +115,7 @@ public class NettyServer implements Destroyable {
                         //p.addLast(serviceHandlerGroup, new NettyRpcServerHandler());
                     }
                 });
-
+        log.info("worker event group threads {}", NettyRuntime.availableProcessors() * 2);
         // bind remote address
         return bootstrap.bind(this.address).sync().addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
