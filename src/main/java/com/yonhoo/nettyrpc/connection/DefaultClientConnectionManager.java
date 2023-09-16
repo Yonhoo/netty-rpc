@@ -14,7 +14,7 @@ public class DefaultClientConnectionManager implements ClientConnectionManager {
     private static final NettyClient nettyClient = new NettyClient();
 
     public DefaultClientConnectionManager() {
-        this.connectionPool = new ConnectionPool(nettyClient.getBootstrap(), 1);
+        this.connectionPool = new ConnectionPool(nettyClient.getBootstrap(), 5);
     }
 
     @Override

@@ -61,6 +61,7 @@ public class BasePool {
     private Future<Connection> acquireHealthyFromPoolOrNew(Promise<Connection> promise) {
         try {
             final Connection connection = this.pollConnection();
+            log.info("client connection {}", connection);
             if (connection == null && connectionDequeue.size() < poolSize) {
                 log.info("create new connection when acquire empty connection from poll");
                 Connection newConnection = connectionFactory.createConnection(url);

@@ -25,6 +25,8 @@ public class ConnectionPool {
     private final long acquireTimeoutNanos;
     private final AtomicInteger acquiredChannelCount;
     private boolean closed;
+
+    private int poolSize;
     private final AcquireTimeoutAction action;
     private final ConcurrentHashMap<Url, BasePool> urlPoolMap = new ConcurrentHashMap<>();
     private Bootstrap bootstrap;
@@ -41,6 +43,7 @@ public class ConnectionPool {
         this.bootstrap = bootstrap;
         this.acquiredChannelCount = new AtomicInteger();
         ObjectUtil.checkPositive(poolSize, "pool Size");
+        this.poolSize = poolSize;
         this.action = action;
         if (action == null && acquireTimeoutMillis == -1L) {
             this.acquireTimeoutNanos = -1L;
@@ -85,7 +88,7 @@ public class ConnectionPool {
     private void doRequireConnection(Url url, Promise<Connection> promise) {
         BasePool basePool = urlPoolMap.get(url);
         if (basePool == null) {
-            basePool = new BasePool(bootstrap, new ClientChannelPoolHandler(), 1, url);
+            basePool = new BasePool(bootstrap, new ClientChannelPoolHandler(), poolSize, url);
             basePool.init();
             urlPoolMap.put(url, basePool);
         }

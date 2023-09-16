@@ -39,8 +39,8 @@ public class RpcMessageDecoder extends LengthFieldBasedFrameDecoder {
 
     @Override
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
-        ByteBuf frame = (ByteBuf) super.decode(ctx, in);
-        if (frame != null) {
+        Object decodeObject = super.decode(ctx, in);
+        if (decodeObject instanceof ByteBuf frame) {
             try {
                 if (frame.readableBytes() >= RpcConstants.TOTAL_LENGTH) {
                     return decodeFrame(frame);
@@ -53,8 +53,7 @@ public class RpcMessageDecoder extends LengthFieldBasedFrameDecoder {
                 frame.release();
             }
         }
-        log.error(String.valueOf(in.readableBytes()));
-        return in;
+        return decodeObject;
     }
 
     private Object decodeFrame(ByteBuf in) {
