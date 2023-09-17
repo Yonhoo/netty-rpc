@@ -1,7 +1,10 @@
 package com.yonhoo.nettyrpc.registry;
 
+import com.yonhoo.nettyrpc.common.SPI;
+
 import java.util.concurrent.TimeUnit;
 
+@SPI
 public interface Registry {
 
     void registry(ProviderConfig providerConfig);

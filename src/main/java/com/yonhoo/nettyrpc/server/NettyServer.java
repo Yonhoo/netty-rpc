@@ -2,6 +2,7 @@ package com.yonhoo.nettyrpc.server;
 
 import com.google.common.base.Preconditions;
 import com.yonhoo.nettyrpc.common.Destroyable;
+import com.yonhoo.nettyrpc.common.ExtensionLoader;
 import com.yonhoo.nettyrpc.common.RpcRunTimeContext;
 import com.yonhoo.nettyrpc.config.RegistryPropertiesConfig;
 import com.yonhoo.nettyrpc.exception.RpcErrorCode;
@@ -68,11 +69,7 @@ public class NettyServer implements Destroyable {
                 throw RpcException.with(RpcErrorCode.SERVICE_IS_EMPTY);
             }
 
-            RegistryPropertiesConfig propertiesConfig = new RegistryPropertiesConfig();
-            propertiesConfig.setAddress("127.0.0.1");
-            propertiesConfig.setApplication("test-application");
-            propertiesConfig.setPort(2181);
-            Registry registry = new ZookeeperRegistry(propertiesConfig);
+            registry = ExtensionLoader.getExtensionLoader(Registry.class).getExtension("registry");
 
             if (Objects.nonNull(registry)) {
                 List<ProviderConfig> providerConfigs =
@@ -117,7 +114,7 @@ public class NettyServer implements Destroyable {
                 });
         log.info("worker event group threads {}", NettyRuntime.availableProcessors() * 2);
         // bind remote address
-        return bootstrap.bind(this.address).sync().addListener((ChannelFutureListener) future -> {
+        return bootstrap.bind(this.address.getPort()).sync().addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 log.info("The netty server has connected [{}] successful!", address);
             } else {

@@ -1,28 +1,25 @@
 package com.yonhoo.nettyrpc.client;
 
-import com.yonhoo.nettyrpc.common.ApplicationContextUtil;
-import com.yonhoo.nettyrpc.config.RegistryPropertiesConfig;
+import com.yonhoo.nettyrpc.common.ExtensionLoader;
 import com.yonhoo.nettyrpc.connection.DefaultClientConnectionManager;
 import com.yonhoo.nettyrpc.exception.RpcErrorCode;
 import com.yonhoo.nettyrpc.exception.RpcException;
 import com.yonhoo.nettyrpc.registry.ConsumerConfig;
 import com.yonhoo.nettyrpc.registry.DefaultProviderInfoListener;
 import com.yonhoo.nettyrpc.registry.Registry;
-import com.yonhoo.nettyrpc.registry.ZookeeperRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class DefaultConsumerBootstrap<T> {
+public class DefaultConsumerBootstrap<T> implements ConsumerBootstrap {
     private final ConsumerConfig consumerConfig;
     private InvokerBroker invokerBroker;
 
-    private static DefaultClientConnectionManager defaultClientConnectionManager = new DefaultClientConnectionManager();
+    private static final DefaultClientConnectionManager defaultClientConnectionManager = new DefaultClientConnectionManager();
     private T proxyInvoker;
 
     private Registry registry;
@@ -32,9 +29,9 @@ public class DefaultConsumerBootstrap<T> {
         this.consumerConfig = consumerConfig;
     }
 
-//    static {
-//        Runtime.getRuntime().addShutdownHook(new Thread(DefaultConsumerBootstrap::close));
-//    }
+    static {
+        Runtime.getRuntime().addShutdownHook(new Thread(DefaultConsumerBootstrap::close));
+    }
 
     public T refer() throws Exception {
         if (proxyInvoker != null) {
@@ -52,18 +49,14 @@ public class DefaultConsumerBootstrap<T> {
                 consumerConfig.setProviderInfoListener(new DefaultProviderInfoListener(invokerBroker));
             }
 
-            RegistryPropertiesConfig propertiesConfig = new RegistryPropertiesConfig();
-            propertiesConfig.setAddress("127.0.0.1");
-            propertiesConfig.setApplication("test-application");
-            propertiesConfig.setPort(2181);
-            registry = new ZookeeperRegistry(propertiesConfig);
+            registry = ExtensionLoader.getExtensionLoader(Registry.class).getExtension("registry");
 
             if (Objects.isNull(registry)) {
                 throw RpcException.with(RpcErrorCode.REGISTRY_CLIENT_UNAVAILABLE);
             }
 
             // refer fast , so might get empty provider info before get notify from registry
-            registry.subscribe(consumerConfig, 2, TimeUnit.SECONDS);
+            registry.subscribe(consumerConfig, 6, TimeUnit.SECONDS);
 
             RpcClientProxy rpcClientProxy = new RpcClientProxy(invokerBroker);
 
@@ -76,7 +69,7 @@ public class DefaultConsumerBootstrap<T> {
 
     }
 
-    public void close() {
+    public static void close() {
         // 1. close consumer invokers
         consumerInvokers.values().forEach(InvokerBroker::destroy);
 
@@ -84,7 +77,8 @@ public class DefaultConsumerBootstrap<T> {
         defaultClientConnectionManager.close();
 
         // 3. close registry
-        registry.destroy();
+        Registry registryClient = ExtensionLoader.getExtensionLoader(Registry.class).getExtension("registry");
+        registryClient.destroy();
 
         //TODO need enhance
         // 4. remove provider infos

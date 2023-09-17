@@ -33,7 +33,7 @@ public class ZookeeperRegistryTest extends BaseZkTest {
         propertiesConfig.setApplication("test-application");
         propertiesConfig.setPort(2181);
 
-        zookeeperRegistry = new ZookeeperRegistry(propertiesConfig);
+        zookeeperRegistry = new ZookeeperRegistry();
     }
 
     @AfterEach
@@ -284,7 +284,7 @@ public class ZookeeperRegistryTest extends BaseZkTest {
         propertiesConfig.setApplication("test-application");
         propertiesConfig.setPort(2181);
 
-        zookeeperRegistry = new ZookeeperRegistry(propertiesConfig);
+        zookeeperRegistry = new ZookeeperRegistry();
         List<String> childPaths = new ArrayList<>(zookeeperRegistry.getZkClient().getChildren().forPath(providerPath));
 
         assertThat(childPaths).isEmpty();

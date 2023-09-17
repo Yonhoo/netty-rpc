@@ -1,16 +1,18 @@
 package com.yonhoo.nettyrpc.registry;
 
 
-import com.yonhoo.nettyrpc.common.Destroyable;
-import com.yonhoo.nettyrpc.common.RpcConstants;
+import com.yonhoo.nettyrpc.common.*;
 import com.yonhoo.nettyrpc.config.RegistryPropertiesConfig;
 import com.yonhoo.nettyrpc.exception.RpcErrorCode;
 import com.yonhoo.nettyrpc.exception.RpcException;
 
+import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -24,11 +26,18 @@ import org.apache.curator.framework.recipes.cache.CuratorCache;
 import org.apache.curator.framework.recipes.cache.CuratorCacheListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.CreateMode;
+import org.springframework.beans.factory.annotation.Value;
 
 @Slf4j
 public class ZookeeperRegistry implements Registry, Destroyable {
 
     public static final String CONTEXT_SEP = "/";
+
+    public static final String rootPath = "registry.application";
+    public static final String addressProperties = "registry.address";
+    public static final String portProperties = "registry.port";
+
+    private static final String properties = "application.properties";
     private CuratorFramework zkClient;
     private final RegistryConfig registryConfig;
     private final ZookeeperProviderObserver providerObserver = new ZookeeperProviderObserver();
@@ -37,13 +46,15 @@ public class ZookeeperRegistry implements Registry, Destroyable {
 
     private static final ConcurrentLinkedQueue<String> SERVICE_PATHS = new ConcurrentLinkedQueue<>();
 
-    public ZookeeperRegistry(RegistryPropertiesConfig registryPropertiesConfig) {
+    public ZookeeperRegistry() {
+
+        Properties propertiesFile = PropertiesFileUtil.readPropertiesFile(properties);
         registryConfig = RegistryConfig.builder()
                 // unique application
-                .rootPath(registryPropertiesConfig.getApplication())
-                .address(registryPropertiesConfig.getAddress())
+                .rootPath(propertiesFile.getProperty(rootPath))
+                .address(propertiesFile.getProperty(addressProperties))
                 .connectTimeout(60000)
-                .port(registryPropertiesConfig.getPort())
+                .port(Integer.valueOf(propertiesFile.getProperty(portProperties)))
                 .build();
 
         if (!registryConfig.getRootPath().endsWith(CONTEXT_SEP)) {

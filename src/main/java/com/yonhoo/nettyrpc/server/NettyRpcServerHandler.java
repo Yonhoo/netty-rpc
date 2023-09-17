@@ -42,7 +42,7 @@ public class NettyRpcServerHandler extends ChannelInboundHandlerAdapter {
                 responseMessage = RpcResponse.success(result);
             } else {
                 responseMessage = RpcResponse.fail(REQUEST_FAIL, CHANNEL_INACTIVE);
-                log.error("not writable now, message dropped");
+                log.error("not writable now, message dropped {}", result);
             }
 
             ctx.writeAndFlush(requestRpcMessage.SuccessResponse(responseMessage)).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
