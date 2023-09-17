@@ -12,5 +12,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ExtendWith(SpringExtension.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @SpringBootTest(classes = NettyApplicationTest.class)
+@TestPropertySource(locations="classpath:application.properties")
 public abstract class BaseIntegrationTest extends BaseZkTest {
 }
