@@ -2,14 +2,11 @@ package com.yonhoo.nettyrpc.registry;
 
 
 import com.yonhoo.nettyrpc.common.*;
-import com.yonhoo.nettyrpc.config.RegistryPropertiesConfig;
 import com.yonhoo.nettyrpc.exception.RpcErrorCode;
 import com.yonhoo.nettyrpc.exception.RpcException;
 
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;

@@ -6,7 +6,7 @@ this is a Netty-based RPC framework
 add zookeeper registry extension in META-INF/extensions
 > registry=com.yonhoo.nettyrpc.registry.ZookeeperRegistry
 
-registry client config:
+registry client config in application.properties:
 ```properties
 registry.address=127.0.0.1
 registry.port=2181
