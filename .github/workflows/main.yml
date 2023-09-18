@@ -11,10 +11,10 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v1
-      - name: Set up JDK ${{matrix. java}} 
+      - name: Set up JDK ${{matrix.java}}
         uses: actions/setup-java@v1 
         with:
-          java-version: ${{matrix. java}}
+          java-version: ${{matrix.java}}
           cache: 'maven'
       - name: Run test
         run: mvn clean test
